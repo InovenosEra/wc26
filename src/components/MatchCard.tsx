@@ -1,9 +1,10 @@
-import { format, isPast, differenceInMinutes } from 'date-fns';
+import { format, isPast, differenceInMinutes, subMinutes } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Clock, ChevronRight } from 'lucide-react';
+import { MapPin, Clock, ChevronRight, Timer } from 'lucide-react';
 import { Match, Prediction } from '@/types';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useCountdown, formatCountdown } from '@/hooks/useCountdown';
 
 interface MatchCardProps {
   match: Match;
@@ -14,6 +15,9 @@ interface MatchCardProps {
 export function MatchCard({ match, prediction, onPredict }: MatchCardProps) {
   const navigate = useNavigate();
   const matchDate = new Date(match.match_date);
+  const predictionDeadline = subMinutes(matchDate, 15); // Predictions close 15 mins before kickoff
+  const countdown = useCountdown(predictionDeadline);
+  
   const isCompleted = match.status === 'completed';
   const minutesToKickoff = differenceInMinutes(matchDate, new Date());
   const canPredict = !isCompleted && minutesToKickoff > 15;
@@ -28,6 +32,27 @@ export function MatchCard({ match, prediction, onPredict }: MatchCardProps) {
     onPredict(match);
   };
 
+  // Format countdown display
+  const getCountdownDisplay = () => {
+    if (countdown.isExpired) return null;
+    if (countdown.totalSeconds <= 0) return null;
+    
+    const isUrgent = countdown.totalSeconds < 3600; // Less than 1 hour
+    const isCritical = countdown.totalSeconds < 900; // Less than 15 minutes
+    
+    return (
+      <div className={cn(
+        "flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full",
+        isCritical && "bg-destructive/20 text-destructive animate-pulse",
+        isUrgent && !isCritical && "bg-amber-500/20 text-amber-500",
+        !isUrgent && "bg-primary/10 text-primary"
+      )}>
+        <Timer className="w-3 h-3" />
+        <span>{formatCountdown(countdown)}</span>
+      </div>
+    );
+  };
+
   return (
     <div 
       onClick={handleCardClick}
@@ -40,6 +65,9 @@ export function MatchCard({ match, prediction, onPredict }: MatchCardProps) {
           <span>{format(matchDate, 'MMM d, yyyy • HH:mm')}</span>
         </div>
         <div className="flex items-center gap-2">
+          {/* Countdown Timer */}
+          {canPredict && getCountdownDisplay()}
+          
           {isLive && (
             <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-destructive/20 text-destructive animate-pulse">
               LIVE
