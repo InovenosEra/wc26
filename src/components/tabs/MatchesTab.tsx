@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Match, Prediction, Team } from '@/types';
 import { fetchLiveFixtures, FormattedFixture } from '@/services/footballApi';
 import { MatchCard } from '@/components/MatchCard';
 import { PredictionModal } from '@/components/PredictionModal';
+import { PullToRefresh } from '@/components/PullToRefresh';
 import { Loader2, CalendarDays, Radio, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -154,11 +155,11 @@ export function MatchesTab() {
     }
   };
 
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     await Promise.all([fetchMatches(), fetchLive(), fetchPredictions()]);
     setRefreshing(false);
-  };
+  }, [user]);
 
   const filteredMatches = matches.filter((match) => {
     if (filter === 'upcoming') return match.status === 'scheduled';
@@ -178,7 +179,7 @@ export function MatchesTab() {
   }
 
   return (
-    <div className="pb-4">
+    <PullToRefresh onRefresh={handleRefresh} className="pb-4">
       {/* Live Match Banner */}
       {hasLiveMatches && (
         <div className="mb-4 p-3 rounded-xl bg-destructive/10 border border-destructive/30 animate-fade-in">
@@ -278,6 +279,6 @@ export function MatchesTab() {
         initialHomeScore={selectedMatch ? predictions[selectedMatch.id]?.predicted_home_score : 0}
         initialAwayScore={selectedMatch ? predictions[selectedMatch.id]?.predicted_away_score : 0}
       />
-    </div>
+    </PullToRefresh>
   );
 }
