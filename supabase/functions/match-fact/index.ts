@@ -23,19 +23,30 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    const prompt = `Generate one short, interesting football/soccer fact about either ${homeTeam} or ${awayTeam} that would be relevant for a FIFA World Cup 2026 match between them at ${stadium || 'the stadium'} in ${city || 'the host city'}. 
+    console.log(`Generating fact for: ${homeTeam} vs ${awayTeam} at ${stadium}, ${city}`);
 
-The fact should be:
-- About World Cup history, head-to-head records, notable players, or interesting trivia
+    const prompt = `Generate ONE fascinating, specific football fact about the matchup between ${homeTeam} and ${awayTeam}.
+
+Choose ONE of these categories and make it SPECIFIC to these two teams:
+1. Head-to-head World Cup history (if they've met before in a World Cup)
+2. A notable player from either team and their World Cup achievements
+3. An interesting statistic comparing these two national teams
+4. Historical context about either team's World Cup journey
+5. A record held by either team in World Cup competitions
+
+Requirements:
+- The fact MUST be specifically about ${homeTeam} or ${awayTeam} - not generic football facts
 - Maximum 2 sentences
-- Engaging and informative
-- Factually accurate based on real football history
+- Be factually accurate based on real football/World Cup history
+- Make it engaging and something fans would find interesting
+- Do NOT use generic phrases like "this will be an exciting match"
 
-Stage: ${stage || 'Group Stage'}
+${stadium ? `Venue: ${stadium}, ${city}` : ''}
+${stage ? `Tournament stage: ${stage}` : ''}
 
-Just provide the fact directly, no introduction or quotation marks.`;
+Provide ONLY the fact, no introduction or quotation marks.`;
 
-    const response = await fetch('https://api.lovable.dev/v1/chat/completions', {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${LOVABLE_API_KEY}`,
@@ -46,23 +57,43 @@ Just provide the fact directly, no introduction or quotation marks.`;
         messages: [
           { 
             role: 'system', 
-            content: 'You are a knowledgeable football historian who provides interesting and accurate facts about World Cup matches and teams.' 
+            content: 'You are a knowledgeable football historian specializing in FIFA World Cup history. You provide accurate, specific, and interesting facts about national teams and their World Cup performances. Never make up statistics - only share real, verifiable information.' 
           },
           { role: 'user', content: prompt }
         ],
-        max_tokens: 150,
-        temperature: 0.7,
       }),
     });
 
     if (!response.ok) {
+      if (response.status === 429) {
+        console.error('Rate limit exceeded');
+        return new Response(JSON.stringify({ 
+          error: 'Rate limit exceeded',
+          fact: `${homeTeam} and ${awayTeam} face off in what promises to be a thrilling World Cup encounter.`
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      if (response.status === 402) {
+        console.error('Payment required');
+        return new Response(JSON.stringify({ 
+          error: 'Payment required',
+          fact: `${homeTeam} takes on ${awayTeam} in this World Cup 2026 clash.`
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
       const errorText = await response.text();
-      console.error('Lovable AI API error:', errorText);
+      console.error('Lovable AI API error:', response.status, errorText);
       throw new Error(`Lovable AI API error: ${response.status}`);
     }
 
     const data = await response.json();
-    const fact = data.choices?.[0]?.message?.content || 'An exciting World Cup match awaits!';
+    const fact = data.choices?.[0]?.message?.content || `${homeTeam} and ${awayTeam} meet in an exciting World Cup encounter.`;
+
+    console.log('Generated fact:', fact);
 
     return new Response(JSON.stringify({ fact }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -74,7 +105,7 @@ Just provide the fact directly, no introduction or quotation marks.`;
       error: errorMessage,
       fact: 'Get ready for an exciting World Cup match between these two nations!'
     }), {
-      status: 200, // Return 200 with fallback fact
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
