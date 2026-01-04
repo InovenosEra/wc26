@@ -1,84 +1,79 @@
-import { supabase } from '@/integrations/supabase/client';
-
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/football-api`;
 
-interface ApiFootballFixture {
-  fixture: {
+// SportMonks API response types
+interface SportMonksFixture {
+  id: number;
+  starting_at: string;
+  state: {
     id: number;
-    date: string;
-    status: {
-      short: string;
-      long: string;
-      elapsed: number | null;
-    };
-    venue: {
-      name: string;
-      city: string;
-    };
+    state: string; // NS, LIVE, FT, HT, etc.
+    short_name: string;
   };
-  league: {
-    round: string;
-  };
-  teams: {
-    home: {
-      id: number;
-      name: string;
-      logo: string;
-    };
-    away: {
-      id: number;
-      name: string;
-      logo: string;
-    };
-  };
-  goals: {
-    home: number | null;
-    away: number | null;
-  };
-}
-
-interface ApiFootballStanding {
-  league: {
-    standings: Array<Array<{
-      rank: number;
-      team: {
-        id: number;
-        name: string;
-        logo: string;
-      };
-      points: number;
-      goalsDiff: number;
-      all: {
-        played: number;
-        win: number;
-        draw: number;
-        lose: number;
-        goals: {
-          for: number;
-          against: number;
-        };
-      };
-      group: string;
-    }>>;
-  };
-}
-
-interface ApiFootballTopScorer {
-  player: {
+  venue?: {
     id: number;
     name: string;
-    photo: string;
+    city_name: string;
   };
-  statistics: Array<{
-    team: {
-      id: number;
-      name: string;
-      logo: string;
-    };
-    goals: {
-      total: number;
+  participants: Array<{
+    id: number;
+    name: string;
+    short_code: string;
+    image_path: string;
+    meta: {
+      location: 'home' | 'away';
     };
   }>;
+  scores?: Array<{
+    participant_id: number;
+    score: {
+      goals: number;
+    };
+  }>;
+  periods?: Array<{
+    minutes: number;
+    type_id: number;
+  }>;
+  league?: {
+    name: string;
+  };
+  round?: {
+    name: string;
+  };
+}
+
+interface SportMonksStanding {
+  participant_id: number;
+  position: number;
+  points: number;
+  participant: {
+    id: number;
+    name: string;
+    short_code: string;
+    image_path: string;
+  };
+  group?: {
+    name: string;
+  };
+  details: Array<{
+    type_id: number;
+    value: number;
+  }>;
+}
+
+interface SportMonksTopScorer {
+  player_id: number;
+  participant_id: number;
+  total: number;
+  player: {
+    id: number;
+    display_name: string;
+    image_path: string;
+  };
+  participant: {
+    id: number;
+    name: string;
+    image_path: string;
+  };
 }
 
 export interface FormattedFixture {
@@ -121,15 +116,9 @@ export interface FormattedTopScorer {
   goals: number;
 }
 
-async function callFootballApi(action: string, params?: Record<string, string>): Promise<any> {
+async function callSportMonksApi(action: string, params?: Record<string, string>): Promise<any> {
   const searchParams = new URLSearchParams({ action, ...params });
   
-  const { data, error } = await supabase.functions.invoke('football-api', {
-    body: null,
-    headers: {},
-  });
-
-  // Use fetch directly since we need query params
   const response = await fetch(`${FUNCTION_URL}?${searchParams.toString()}`, {
     method: 'GET',
     headers: {
@@ -147,8 +136,8 @@ async function callFootballApi(action: string, params?: Record<string, string>):
 
 export async function fetchLiveFixtures(): Promise<FormattedFixture[]> {
   try {
-    const data = await callFootballApi('live');
-    return formatFixtures(data.response || []);
+    const data = await callSportMonksApi('live');
+    return formatFixtures(data.data || []);
   } catch (error) {
     console.error('Error fetching live fixtures:', error);
     return [];
@@ -157,8 +146,8 @@ export async function fetchLiveFixtures(): Promise<FormattedFixture[]> {
 
 export async function fetchAllFixtures(): Promise<FormattedFixture[]> {
   try {
-    const data = await callFootballApi('fixtures');
-    return formatFixtures(data.response || []);
+    const data = await callSportMonksApi('fixtures');
+    return formatFixtures(data.data || []);
   } catch (error) {
     console.error('Error fetching fixtures:', error);
     return [];
@@ -167,29 +156,42 @@ export async function fetchAllFixtures(): Promise<FormattedFixture[]> {
 
 export async function fetchStandings(): Promise<Record<string, FormattedStanding[]>> {
   try {
-    const data = await callFootballApi('standings');
-    const standings = data.response?.[0]?.league?.standings || [];
+    const data = await callSportMonksApi('standings');
+    const standings = data.data || [];
     
     const groupedStandings: Record<string, FormattedStanding[]> = {};
     
-    standings.forEach((group: any[]) => {
-      if (group.length > 0) {
-        const groupName = group[0].group?.replace('Group ', '') || 'Unknown';
-        groupedStandings[groupName] = group.map((team: any) => ({
-          rank: team.rank,
-          teamName: team.team.name,
-          teamLogo: team.team.logo,
-          played: team.all.played,
-          won: team.all.win,
-          drawn: team.all.draw,
-          lost: team.all.lose,
-          goalsFor: team.all.goals.for,
-          goalsAgainst: team.all.goals.against,
-          goalsDiff: team.goalsDiff,
-          points: team.points,
-          group: groupName,
-        }));
+    standings.forEach((standing: SportMonksStanding) => {
+      const groupName = standing.group?.name?.replace('Group ', '') || 'A';
+      
+      if (!groupedStandings[groupName]) {
+        groupedStandings[groupName] = [];
       }
+      
+      // Extract stats from details array
+      // Type IDs: 129=played, 130=won, 131=draw, 132=lost, 133=goals_for, 134=goals_against
+      const getDetailValue = (typeId: number) => 
+        standing.details?.find(d => d.type_id === typeId)?.value || 0;
+      
+      groupedStandings[groupName].push({
+        rank: standing.position,
+        teamName: standing.participant?.name || 'Unknown',
+        teamLogo: standing.participant?.image_path || '',
+        played: getDetailValue(129),
+        won: getDetailValue(130),
+        drawn: getDetailValue(131),
+        lost: getDetailValue(132),
+        goalsFor: getDetailValue(133),
+        goalsAgainst: getDetailValue(134),
+        goalsDiff: getDetailValue(133) - getDetailValue(134),
+        points: standing.points,
+        group: groupName,
+      });
+    });
+    
+    // Sort each group by position
+    Object.keys(groupedStandings).forEach(group => {
+      groupedStandings[group].sort((a, b) => a.rank - b.rank);
     });
     
     return groupedStandings;
@@ -201,13 +203,13 @@ export async function fetchStandings(): Promise<Record<string, FormattedStanding
 
 export async function fetchTopScorers(): Promise<FormattedTopScorer[]> {
   try {
-    const data = await callFootballApi('topscorers');
-    return (data.response || []).slice(0, 10).map((item: ApiFootballTopScorer) => ({
-      playerName: item.player.name,
-      playerPhoto: item.player.photo,
-      teamName: item.statistics[0]?.team.name || 'Unknown',
-      teamLogo: item.statistics[0]?.team.logo || '',
-      goals: item.statistics[0]?.goals.total || 0,
+    const data = await callSportMonksApi('topscorers');
+    return (data.data || []).slice(0, 10).map((item: SportMonksTopScorer) => ({
+      playerName: item.player?.display_name || 'Unknown',
+      playerPhoto: item.player?.image_path || '',
+      teamName: item.participant?.name || 'Unknown',
+      teamLogo: item.participant?.image_path || '',
+      goals: item.total || 0,
     }));
   } catch (error) {
     console.error('Error fetching top scorers:', error);
@@ -215,46 +217,66 @@ export async function fetchTopScorers(): Promise<FormattedTopScorer[]> {
   }
 }
 
-function formatFixtures(fixtures: ApiFootballFixture[]): FormattedFixture[] {
+function formatFixtures(fixtures: SportMonksFixture[]): FormattedFixture[] {
   return fixtures.map((fixture) => {
+    // Determine status from state
     let status: 'scheduled' | 'live' | 'completed' = 'scheduled';
+    const stateShort = fixture.state?.short_name || 'NS';
     
-    const statusShort = fixture.fixture.status.short;
-    if (['1H', '2H', 'HT', 'ET', 'P', 'BT', 'LIVE'].includes(statusShort)) {
+    // Live states
+    if (['LIVE', '1H', '2H', 'HT', 'ET', 'PEN_LIVE', 'BT'].includes(stateShort)) {
       status = 'live';
-    } else if (['FT', 'AET', 'PEN', 'AWD', 'WO'].includes(statusShort)) {
+    }
+    // Completed states
+    else if (['FT', 'AET', 'FT_PEN', 'CANCL', 'POSTP', 'SUSP', 'AWD', 'WO'].includes(stateShort)) {
       status = 'completed';
     }
-    
+
+    // Get home and away teams
+    const homeTeam = fixture.participants?.find(p => p.meta.location === 'home');
+    const awayTeam = fixture.participants?.find(p => p.meta.location === 'away');
+
+    // Get scores
+    const homeScore = fixture.scores?.find(s => s.participant_id === homeTeam?.id)?.score?.goals ?? null;
+    const awayScore = fixture.scores?.find(s => s.participant_id === awayTeam?.id)?.score?.goals ?? null;
+
+    // Get elapsed time from periods
+    const currentPeriod = fixture.periods?.find(p => p.type_id === 1 || p.type_id === 2);
+    const elapsed = currentPeriod?.minutes ?? null;
+
     return {
-      externalId: fixture.fixture.id,
-      homeTeamName: fixture.teams.home.name,
-      awayTeamName: fixture.teams.away.name,
-      homeTeamLogo: fixture.teams.home.logo,
-      awayTeamLogo: fixture.teams.away.logo,
-      homeScore: fixture.goals.home,
-      awayScore: fixture.goals.away,
-      matchDate: fixture.fixture.date,
-      stadium: fixture.fixture.venue?.name || '',
-      city: fixture.fixture.venue?.city || '',
+      externalId: fixture.id,
+      homeTeamName: homeTeam?.name || 'TBD',
+      awayTeamName: awayTeam?.name || 'TBD',
+      homeTeamLogo: homeTeam?.image_path || '',
+      awayTeamLogo: awayTeam?.image_path || '',
+      homeScore,
+      awayScore,
+      matchDate: fixture.starting_at,
+      stadium: fixture.venue?.name || '',
+      city: fixture.venue?.city_name || '',
       status,
-      statusShort,
-      elapsed: fixture.fixture.status.elapsed,
-      round: fixture.league.round,
+      statusShort: stateShort,
+      elapsed,
+      round: fixture.round?.name || fixture.league?.name || '',
     };
   });
 }
 
-// Check if API is configured
+// Check if API is configured and working
 export async function checkApiConnection(): Promise<boolean> {
   try {
-    const response = await fetch(`${FUNCTION_URL}?action=teams`, {
+    const response = await fetch(`${FUNCTION_URL}?action=leagues`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
     });
-    return response.ok;
+    
+    if (!response.ok) return false;
+    
+    const data = await response.json();
+    return !data.error;
   } catch {
     return false;
   }
