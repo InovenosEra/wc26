@@ -7,10 +7,8 @@ const corsHeaders = {
 
 const SPORTMONKS_BASE = 'https://api.sportmonks.com/v3/football';
 
-// FIFA World Cup 2026 - League ID will be available closer to the tournament
-// Using 732 as placeholder (World Cup)
-const WORLD_CUP_LEAGUE_ID = 732;
-const WORLD_CUP_SEASON_ID = 2026; // Will be updated when actual season ID is available
+// FIFA World Cup 2026 - Season ID from SportMonks
+const WORLD_CUP_SEASON_ID = 26618;
 
 serve(async (req) => {
   // Handle CORS preflight
@@ -39,11 +37,10 @@ serve(async (req) => {
 
     switch (action) {
       case 'fixtures':
-        // Get fixtures for World Cup
-        endpoint = '/fixtures';
-        params.append('filters', `fixtureLeagues:${WORLD_CUP_LEAGUE_ID}`);
+        // Get fixtures for World Cup 2026 season
+        endpoint = `/fixtures/seasons/${WORLD_CUP_SEASON_ID}`;
         params.append('include', 'participants;venue;state;scores');
-        params.append('per_page', '50');
+        params.append('per_page', '100');
         break;
 
       case 'live':
