@@ -1,5 +1,6 @@
 import { format, isPast, differenceInMinutes } from 'date-fns';
-import { MapPin, Clock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { MapPin, Clock, ChevronRight } from 'lucide-react';
 import { Match, Prediction } from '@/types';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -11,30 +12,46 @@ interface MatchCardProps {
 }
 
 export function MatchCard({ match, prediction, onPredict }: MatchCardProps) {
+  const navigate = useNavigate();
   const matchDate = new Date(match.match_date);
   const isCompleted = match.status === 'completed';
   const minutesToKickoff = differenceInMinutes(matchDate, new Date());
   const canPredict = !isCompleted && minutesToKickoff > 15;
   const isLive = !isCompleted && isPast(matchDate);
 
+  const handleCardClick = () => {
+    navigate(`/match/${match.id}`);
+  };
+
+  const handlePredictClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onPredict(match);
+  };
+
   return (
-    <div className="glass-card rounded-xl p-4 animate-slide-up shadow-card">
+    <div 
+      onClick={handleCardClick}
+      className="glass-card rounded-xl p-4 animate-slide-up shadow-card cursor-pointer hover:bg-card/90 transition-colors group"
+    >
       {/* Match Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
           <Clock className="w-3 h-3" />
           <span>{format(matchDate, 'MMM d, yyyy • HH:mm')}</span>
         </div>
-        {isLive && (
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-destructive/20 text-destructive animate-pulse">
-            LIVE
-          </span>
-        )}
-        {isCompleted && (
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-accent/20 text-accent">
-            FT
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {isLive && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-destructive/20 text-destructive animate-pulse">
+              LIVE
+            </span>
+          )}
+          {isCompleted && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-accent/20 text-accent">
+              FT
+            </span>
+          )}
+          <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+        </div>
       </div>
 
       {/* Teams */}
@@ -100,7 +117,7 @@ export function MatchCard({ match, prediction, onPredict }: MatchCardProps) {
       {/* Predict Button */}
       {canPredict && (
         <Button 
-          onClick={() => onPredict(match)}
+          onClick={handlePredictClick}
           className="w-full mt-3 h-9 text-xs font-semibold gradient-gold text-primary-foreground shadow-gold hover:opacity-90 transition-opacity"
         >
           {prediction ? 'Update Prediction' : 'Predict Score'}
