@@ -1,4 +1,4 @@
-import { CalendarDays, Trophy, Target, BarChart3 } from 'lucide-react';
+import { CalendarDays, Trophy, Target, BarChart3, Newspaper } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface BottomNavProps {
@@ -11,6 +11,7 @@ const tabs = [
   { id: 'leaderboard', label: 'Leaderboard', icon: Trophy },
   { id: 'predictions', label: 'My Picks', icon: Target },
   { id: 'stats', label: 'Stats', icon: BarChart3 },
+  { id: 'news', label: 'News', icon: Newspaper },
 ];
 
 export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
