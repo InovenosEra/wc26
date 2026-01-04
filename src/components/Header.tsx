@@ -1,4 +1,4 @@
-import { Trophy, User, LogOut, LogIn } from 'lucide-react';
+import { User, LogOut, LogIn } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import {
@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import wc2026Logo from '@/assets/wc2026-logo.png';
 
 interface HeaderProps {
   onAuthClick: () => void;
@@ -20,14 +21,15 @@ export function Header({ onAuthClick }: HeaderProps) {
     <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border">
       <div className="flex items-center justify-between h-14 px-4 max-w-lg mx-auto">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg gradient-gold flex items-center justify-center shadow-gold">
-            <Trophy className="w-4 h-4 text-primary-foreground" />
-          </div>
+          <img 
+            src={wc2026Logo} 
+            alt="FIFA World Cup 2026" 
+            className="h-10 w-auto"
+          />
           <div>
             <h1 className="text-sm font-bold text-foreground leading-none">
-              World Cup 2026
+              Predictions
             </h1>
-            <p className="text-[10px] text-muted-foreground">Predictions</p>
           </div>
         </div>
 
