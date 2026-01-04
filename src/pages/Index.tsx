@@ -6,6 +6,7 @@ import { MatchesTab } from '@/components/tabs/MatchesTab';
 import { LeaderboardTab } from '@/components/tabs/LeaderboardTab';
 import { PredictionsTab } from '@/components/tabs/PredictionsTab';
 import { StatsTab } from '@/components/tabs/StatsTab';
+import { NewsTab } from '@/components/tabs/NewsTab';
 import { useAuth } from '@/hooks/useAuth';
 
 const Index = () => {
@@ -23,6 +24,8 @@ const Index = () => {
         return <PredictionsTab onAuthClick={() => setShowAuth(true)} />;
       case 'stats':
         return <StatsTab />;
+      case 'news':
+        return <NewsTab />;
       default:
         return <MatchesTab />;
     }
