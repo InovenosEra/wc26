@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
-import { Newspaper, ExternalLink, Clock, Filter, X } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Newspaper, ExternalLink, Clock, Filter, X, Search } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
@@ -91,9 +92,24 @@ const mockNews = [
 export function NewsTab() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchTeams();
+  }, []);
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const fetchTeams = async () => {
@@ -110,13 +126,28 @@ export function NewsTab() {
     }
   };
 
+  // Filter teams based on search query
+  const filteredTeams = teams.filter(team => 
+    team.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    team.code.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const filteredNews = selectedTeam
     ? mockNews.filter(article => 
         article.teams.includes(selectedTeam) || article.teams.length === 0
       )
     : mockNews;
 
-  const clearFilter = () => setSelectedTeam(null);
+  const clearFilter = () => {
+    setSelectedTeam(null);
+    setSearchQuery('');
+  };
+
+  const selectTeam = (team: Team) => {
+    setSelectedTeam(team.code);
+    setSearchQuery(team.name);
+    setShowSuggestions(false);
+  };
 
   return (
     <div className="space-y-4">
@@ -138,12 +169,76 @@ export function NewsTab() {
         )}
       </div>
 
-      {/* Team Filter */}
+      {/* Team Search with Autocomplete */}
       <div className="space-y-2">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Filter className="w-3 h-3" />
           <span>Filter by team</span>
         </div>
+        
+        <div ref={searchRef} className="relative">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search team name..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setShowSuggestions(true);
+                if (!e.target.value) {
+                  setSelectedTeam(null);
+                }
+              }}
+              onFocus={() => setShowSuggestions(true)}
+              className="pl-9 h-10 bg-card border-border"
+              maxLength={50}
+            />
+            {searchQuery && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedTeam(null);
+                }}
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
+          
+          {/* Autocomplete Suggestions */}
+          {showSuggestions && searchQuery && filteredTeams.length > 0 && (
+            <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-lg shadow-lg max-h-48 overflow-auto">
+              {filteredTeams.slice(0, 8).map((team) => (
+                <button
+                  key={team.id}
+                  onClick={() => selectTeam(team)}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-3 py-2 hover:bg-muted/50 transition-colors text-left",
+                    selectedTeam === team.code && "bg-primary/10"
+                  )}
+                >
+                  {team.flag_url && (
+                    <img 
+                      src={team.flag_url} 
+                      alt={team.name}
+                      className="w-6 h-4 object-cover rounded-sm"
+                    />
+                  )}
+                  <span className="text-sm">{team.name}</span>
+                  <span className="text-xs text-muted-foreground ml-auto">{team.code}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Quick Team Filter */}
+      <div className="space-y-2">
         <ScrollArea className="w-full whitespace-nowrap">
           <div className="flex gap-2 pb-2">
             {teams.map((team) => (
