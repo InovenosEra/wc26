@@ -11,12 +11,12 @@ import {
   BarChart3, 
   Loader2,
   Target,
-  Flag,
   AlertCircle,
   RefreshCw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { MatchFact } from '@/components/MatchFact';
 import { cn } from '@/lib/utils';
 
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/football-api`;
@@ -233,6 +233,17 @@ export default function MatchDetail() {
       </header>
 
       <main className="max-w-lg mx-auto px-4">
+        {/* AI Generated Match Fact */}
+        <div className="mt-4">
+          <MatchFact
+            homeTeam={match.home_team.name}
+            awayTeam={match.away_team.name}
+            stadium={match.stadium}
+            city={match.city}
+            stage={match.stage}
+          />
+        </div>
+
         {/* Match Header Card */}
         <div className="glass-card rounded-xl p-4 mt-4 animate-fade-in">
           {/* Status & Date */}
