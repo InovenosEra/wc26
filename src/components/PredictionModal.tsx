@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { subMinutes } from 'date-fns';
 import { Match } from '@/types';
 import { Button } from '@/components/ui/button';
 import {
@@ -7,16 +8,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Minus, Plus, Loader2 } from 'lucide-react';
+import { Minus, Plus, Loader2, Trash2, Timer } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useCountdown, formatCountdown } from '@/hooks/useCountdown';
 
 interface PredictionModalProps {
   match: Match | null;
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (homeScore: number, awayScore: number) => Promise<void>;
+  onDelete?: () => Promise<void>;
   initialHomeScore?: number;
   initialAwayScore?: number;
+  hasPrediction?: boolean;
 }
 
 export function PredictionModal({ 
@@ -24,12 +28,26 @@ export function PredictionModal({
   isOpen, 
   onClose, 
   onSubmit,
+  onDelete,
   initialHomeScore = 0,
-  initialAwayScore = 0
+  initialAwayScore = 0,
+  hasPrediction = false,
 }: PredictionModalProps) {
   const [homeScore, setHomeScore] = useState(initialHomeScore);
   const [awayScore, setAwayScore] = useState(initialAwayScore);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Reset scores when modal opens with new values
+  useEffect(() => {
+    if (isOpen) {
+      setHomeScore(initialHomeScore);
+      setAwayScore(initialAwayScore);
+    }
+  }, [isOpen, initialHomeScore, initialAwayScore]);
+
+  const predictionDeadline = match ? subMinutes(new Date(match.match_date), 15) : new Date();
+  const countdown = useCountdown(predictionDeadline);
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
@@ -38,6 +56,17 @@ export function PredictionModal({
       onClose();
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!onDelete) return;
+    setIsDeleting(true);
+    try {
+      await onDelete();
+      onClose();
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -90,14 +119,30 @@ export function PredictionModal({
 
   if (!match) return null;
 
+  const isUrgent = countdown.totalSeconds < 3600;
+  const isCritical = countdown.totalSeconds < 900;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-[90vw] max-w-[360px] bg-card border-border p-4">
         <DialogHeader>
           <DialogTitle className="text-center text-lg font-bold">
-            Make Your Prediction
+            {hasPrediction ? 'Update Prediction' : 'Make Your Prediction'}
           </DialogTitle>
         </DialogHeader>
+
+        {/* Countdown Timer */}
+        {!countdown.isExpired && (
+          <div className={cn(
+            "flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium",
+            isCritical && "bg-destructive/20 text-destructive",
+            isUrgent && !isCritical && "bg-amber-500/20 text-amber-500",
+            !isUrgent && "bg-primary/10 text-primary"
+          )}>
+            <Timer className="w-4 h-4" />
+            <span>Predictions close in {formatCountdown(countdown)}</span>
+          </div>
+        )}
 
         <div className="py-4">
           <div className="flex items-start justify-center gap-3">
@@ -126,19 +171,34 @@ export function PredictionModal({
           </div>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex gap-2">
+          {hasPrediction && onDelete && (
+            <Button 
+              variant="outline" 
+              size="icon"
+              onClick={handleDelete}
+              disabled={isDeleting || isSubmitting}
+              className="shrink-0 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+            >
+              {isDeleting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4" />
+              )}
+            </Button>
+          )}
           <Button 
             variant="outline" 
             onClick={onClose}
             className="flex-1"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isDeleting}
           >
             Cancel
           </Button>
           <Button 
             onClick={handleSubmit}
             className="flex-1 gradient-gold text-primary-foreground shadow-gold"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isDeleting}
           >
             {isSubmitting ? (
               <Loader2 className="w-4 h-4 animate-spin" />

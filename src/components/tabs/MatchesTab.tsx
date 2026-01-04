@@ -155,6 +155,37 @@ export function MatchesTab() {
     }
   };
 
+  const handleDeletePrediction = async () => {
+    if (!selectedMatch || !user) return;
+    
+    const prediction = predictions[selectedMatch.id];
+    if (!prediction) return;
+    
+    try {
+      const { error } = await supabase
+        .from('predictions')
+        .delete()
+        .eq('id', prediction.id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      
+      toast({
+        title: 'Prediction deleted',
+        description: `Removed prediction for ${selectedMatch.home_team.code} vs ${selectedMatch.away_team.code}`,
+      });
+      
+      await fetchPredictions();
+    } catch (error: any) {
+      console.error('Error deleting prediction:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to delete prediction. Please try again.',
+      });
+    }
+  };
+
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     await Promise.all([fetchMatches(), fetchLive(), fetchPredictions()]);
@@ -276,8 +307,10 @@ export function MatchesTab() {
         isOpen={!!selectedMatch}
         onClose={() => setSelectedMatch(null)}
         onSubmit={handleSubmitPrediction}
-        initialHomeScore={selectedMatch ? predictions[selectedMatch.id]?.predicted_home_score : 0}
-        initialAwayScore={selectedMatch ? predictions[selectedMatch.id]?.predicted_away_score : 0}
+        onDelete={handleDeletePrediction}
+        initialHomeScore={selectedMatch ? predictions[selectedMatch.id]?.predicted_home_score ?? 0 : 0}
+        initialAwayScore={selectedMatch ? predictions[selectedMatch.id]?.predicted_away_score ?? 0 : 0}
+        hasPrediction={selectedMatch ? !!predictions[selectedMatch.id] : false}
       />
     </PullToRefresh>
   );
