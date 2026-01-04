@@ -50,39 +50,39 @@ export function PredictionModal({
     onChange: (v: number) => void; 
     team: { name: string; flag_url: string | null };
   }) => (
-    <div className="flex flex-col items-center gap-3">
+    <div className="flex flex-col items-center gap-2 min-w-0 flex-1">
       <img 
         src={team.flag_url || ''} 
         alt={team.name}
-        className="w-16 h-10 object-cover rounded shadow-md"
+        className="w-12 h-8 object-cover rounded shadow-md"
       />
-      <span className="text-sm font-semibold">{team.name}</span>
+      <span className="text-xs font-semibold text-center truncate w-full px-1">{team.name}</span>
       
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <button
           onClick={() => onChange(Math.max(0, value - 1))}
           disabled={value === 0}
           className={cn(
-            "w-10 h-10 rounded-full flex items-center justify-center transition-all",
+            "w-8 h-8 rounded-full flex items-center justify-center transition-all",
             "bg-secondary hover:bg-secondary/80 disabled:opacity-30"
           )}
         >
-          <Minus className="w-4 h-4" />
+          <Minus className="w-3 h-3" />
         </button>
         
-        <div className="w-16 h-16 rounded-xl bg-card border-2 border-primary/50 flex items-center justify-center">
-          <span className="text-3xl font-bold text-primary">{value}</span>
+        <div className="w-12 h-12 rounded-xl bg-card border-2 border-primary/50 flex items-center justify-center">
+          <span className="text-2xl font-bold text-primary">{value}</span>
         </div>
         
         <button
           onClick={() => onChange(Math.min(15, value + 1))}
           disabled={value === 15}
           className={cn(
-            "w-10 h-10 rounded-full flex items-center justify-center transition-all",
+            "w-8 h-8 rounded-full flex items-center justify-center transition-all",
             "bg-secondary hover:bg-secondary/80 disabled:opacity-30"
           )}
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-3 h-3" />
         </button>
       </div>
     </div>
@@ -92,22 +92,22 @@ export function PredictionModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm w-[calc(100%-2rem)] mx-auto bg-card border-border left-1/2 -translate-x-1/2">
+      <DialogContent className="w-[90vw] max-w-[360px] bg-card border-border p-4">
         <DialogHeader>
           <DialogTitle className="text-center text-lg font-bold">
             Make Your Prediction
           </DialogTitle>
         </DialogHeader>
 
-        <div className="py-6">
-          <div className="flex items-start justify-between gap-4">
+        <div className="py-4">
+          <div className="flex items-start justify-center gap-3">
             <ScoreInput 
               value={homeScore} 
               onChange={setHomeScore} 
               team={match.home_team}
             />
             
-            <div className="pt-16 text-muted-foreground font-semibold">
+            <div className="pt-14 text-muted-foreground font-semibold text-sm">
               VS
             </div>
             
@@ -118,7 +118,7 @@ export function PredictionModal({
             />
           </div>
 
-          <div className="mt-6 p-3 rounded-lg bg-muted/50 text-center">
+          <div className="mt-4 p-3 rounded-lg bg-muted/50 text-center">
             <p className="text-xs text-muted-foreground">
               <span className="font-semibold text-primary">5 pts</span> for exact score • 
               <span className="font-semibold text-accent ml-1">2 pts</span> for correct result
