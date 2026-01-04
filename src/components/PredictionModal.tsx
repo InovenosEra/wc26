@@ -92,7 +92,7 @@ export function PredictionModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm mx-auto bg-card border-border">
+      <DialogContent className="max-w-sm w-[calc(100%-2rem)] mx-auto bg-card border-border left-1/2 -translate-x-1/2">
         <DialogHeader>
           <DialogTitle className="text-center text-lg font-bold">
             Make Your Prediction
