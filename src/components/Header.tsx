@@ -28,7 +28,7 @@ export function Header({ onAuthClick }: HeaderProps) {
           />
           <div>
             <h1 className="text-sm font-bold text-foreground leading-none">
-              Predictions
+              2026 FIFA World Cup
             </h1>
           </div>
         </div>
