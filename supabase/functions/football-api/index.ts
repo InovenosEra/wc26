@@ -5,11 +5,12 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const API_FOOTBALL_BASE = 'https://v3.football.api-sports.io';
+const SPORTMONKS_BASE = 'https://api.sportmonks.com/v3/football';
 
-// World Cup 2026 league ID (use 1 for World Cup, we'll adjust when the real tournament ID is available)
-const WORLD_CUP_LEAGUE_ID = 1;
-const WORLD_CUP_SEASON = 2026;
+// FIFA World Cup 2026 - League ID will be available closer to the tournament
+// Using 732 as placeholder (World Cup)
+const WORLD_CUP_LEAGUE_ID = 732;
+const WORLD_CUP_SEASON_ID = 2026; // Will be updated when actual season ID is available
 
 serve(async (req) => {
   // Handle CORS preflight
@@ -18,9 +19,9 @@ serve(async (req) => {
   }
 
   try {
-    const apiKey = Deno.env.get('FOOTBALL_API_KEY');
+    const apiKey = Deno.env.get('SPORTMONKS_API_KEY');
     if (!apiKey) {
-      console.error('FOOTBALL_API_KEY not configured');
+      console.error('SPORTMONKS_API_KEY not configured');
       return new Response(
         JSON.stringify({ error: 'API key not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -30,45 +31,44 @@ serve(async (req) => {
     const url = new URL(req.url);
     const action = url.searchParams.get('action');
     
-    console.log(`Football API request: action=${action}`);
+    console.log(`SportMonks API request: action=${action}`);
 
     let endpoint = '';
     const params = new URLSearchParams();
+    params.append('api_token', apiKey);
 
     switch (action) {
       case 'fixtures':
-        // Get World Cup fixtures
+        // Get fixtures for World Cup
         endpoint = '/fixtures';
-        params.append('league', WORLD_CUP_LEAGUE_ID.toString());
-        params.append('season', WORLD_CUP_SEASON.toString());
+        params.append('filters', `fixtureLeagues:${WORLD_CUP_LEAGUE_ID}`);
+        params.append('include', 'participants;venue;state;scores');
+        params.append('per_page', '50');
         break;
 
       case 'live':
-        // Get live matches
-        endpoint = '/fixtures';
-        params.append('live', 'all');
-        params.append('league', WORLD_CUP_LEAGUE_ID.toString());
+        // Get live/inplay fixtures
+        endpoint = '/livescores/inplay';
+        params.append('include', 'participants;venue;state;scores;periods');
         break;
 
       case 'standings':
-        // Get group standings
-        endpoint = '/standings';
-        params.append('league', WORLD_CUP_LEAGUE_ID.toString());
-        params.append('season', WORLD_CUP_SEASON.toString());
+        // Get standings by season
+        endpoint = `/standings/seasons/${WORLD_CUP_SEASON_ID}`;
+        params.append('include', 'participant;group');
         break;
 
       case 'topscorers':
         // Get top scorers
-        endpoint = '/players/topscorers';
-        params.append('league', WORLD_CUP_LEAGUE_ID.toString());
-        params.append('season', WORLD_CUP_SEASON.toString());
+        endpoint = `/topscorers/seasons/${WORLD_CUP_SEASON_ID}`;
+        params.append('include', 'player;participant');
+        params.append('per_page', '20');
         break;
 
       case 'teams':
-        // Get all teams in World Cup
-        endpoint = '/teams';
-        params.append('league', WORLD_CUP_LEAGUE_ID.toString());
-        params.append('season', WORLD_CUP_SEASON.toString());
+        // Get teams in league
+        endpoint = `/teams/seasons/${WORLD_CUP_SEASON_ID}`;
+        params.append('include', 'country');
         break;
 
       case 'fixture':
@@ -80,8 +80,8 @@ serve(async (req) => {
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
-        endpoint = '/fixtures';
-        params.append('id', fixtureId);
+        endpoint = `/fixtures/${fixtureId}`;
+        params.append('include', 'participants;venue;state;scores;statistics;lineups');
         break;
 
       case 'statistics':
@@ -93,44 +93,52 @@ serve(async (req) => {
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
-        endpoint = '/fixtures/statistics';
-        params.append('fixture', statsFixtureId);
+        endpoint = `/fixtures/${statsFixtureId}`;
+        params.append('include', 'statistics.type');
+        break;
+
+      case 'leagues':
+        // Get available leagues (useful for finding World Cup ID)
+        endpoint = '/leagues';
+        params.append('include', 'currentSeason');
+        params.append('filters', 'name:World Cup');
         break;
 
       default:
         return new Response(
-          JSON.stringify({ error: 'Invalid action. Use: fixtures, live, standings, topscorers, teams, fixture, statistics' }),
+          JSON.stringify({ error: 'Invalid action. Use: fixtures, live, standings, topscorers, teams, fixture, statistics, leagues' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
     }
 
-    const apiUrl = `${API_FOOTBALL_BASE}${endpoint}?${params.toString()}`;
-    console.log(`Calling API-Football: ${endpoint}`);
+    const apiUrl = `${SPORTMONKS_BASE}${endpoint}?${params.toString()}`;
+    console.log(`Calling SportMonks: ${endpoint}`);
 
     const response = await fetch(apiUrl, {
       method: 'GET',
       headers: {
-        'x-apisports-key': apiKey,
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
     });
 
     if (!response.ok) {
-      console.error(`API-Football error: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      console.error(`SportMonks error: ${response.status} ${response.statusText}`, errorText);
       return new Response(
-        JSON.stringify({ error: `API error: ${response.status}` }),
+        JSON.stringify({ error: `API error: ${response.status}`, details: errorText }),
         { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const data = await response.json();
-    console.log(`API-Football response: ${data.results} results, errors: ${JSON.stringify(data.errors)}`);
+    console.log(`SportMonks response received, data count: ${data.data?.length || 0}`);
 
     // Check for API errors
-    if (data.errors && Object.keys(data.errors).length > 0) {
-      console.error('API-Football returned errors:', data.errors);
+    if (data.message && data.message.includes('error')) {
+      console.error('SportMonks returned error:', data.message);
       return new Response(
-        JSON.stringify({ error: 'API returned errors', details: data.errors }),
+        JSON.stringify({ error: data.message }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -141,7 +149,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error in football-api function:', error);
+    console.error('Error in sportmonks-api function:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
       JSON.stringify({ error: errorMessage }),
