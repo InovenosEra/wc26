@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Team } from '@/types';
 import { format } from 'date-fns';
-import { Loader2, Trophy, Minus } from 'lucide-react';
+import { Loader2, Trophy, Minus, Globe, Calendar } from 'lucide-react';
 
 interface HeadToHeadMatch {
   id: string;
@@ -13,6 +13,25 @@ interface HeadToHeadMatch {
   stage: string | null;
   home_team: Team;
   away_team: Team;
+}
+
+interface HistoricalMatch {
+  year: number;
+  tournament: string;
+  stage: string;
+  team1Score: number;
+  team2Score: number;
+  venue: string;
+  winner: string;
+}
+
+interface HistoricalData {
+  totalMatches: number;
+  team1Wins: number;
+  team2Wins: number;
+  draws: number;
+  matches: HistoricalMatch[];
+  notableStats: string;
 }
 
 interface HeadToHeadProps {
@@ -32,15 +51,18 @@ interface HeadToHeadStats {
 export function HeadToHead({ homeTeam, awayTeam, currentMatchId }: HeadToHeadProps) {
   const [matches, setMatches] = useState<HeadToHeadMatch[]>([]);
   const [stats, setStats] = useState<HeadToHeadStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [historicalData, setHistoricalData] = useState<HistoricalData | null>(null);
+  const [loadingDb, setLoadingDb] = useState(true);
+  const [loadingHistory, setLoadingHistory] = useState(true);
 
   useEffect(() => {
     fetchHeadToHead();
+    fetchHistoricalData();
   }, [homeTeam.id, awayTeam.id]);
 
   const fetchHeadToHead = async () => {
     try {
-      setLoading(true);
+      setLoadingDb(true);
 
       // Fetch matches where these two teams played against each other
       const { data, error } = await supabase
@@ -108,9 +130,34 @@ export function HeadToHead({ homeTeam, awayTeam, currentMatchId }: HeadToHeadPro
     } catch (error) {
       console.error('Error fetching head-to-head:', error);
     } finally {
-      setLoading(false);
+      setLoadingDb(false);
     }
   };
+
+  const fetchHistoricalData = async () => {
+    try {
+      setLoadingHistory(true);
+      
+      const { data, error } = await supabase.functions.invoke('h2h-history', {
+        body: {
+          homeTeam: homeTeam.name,
+          awayTeam: awayTeam.name,
+        },
+      });
+
+      if (error) throw error;
+      
+      if (data?.history) {
+        setHistoricalData(data.history);
+      }
+    } catch (error) {
+      console.error('Error fetching historical data:', error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const loading = loadingDb && loadingHistory;
 
   if (loading) {
     return (
@@ -120,90 +167,223 @@ export function HeadToHead({ homeTeam, awayTeam, currentMatchId }: HeadToHeadPro
     );
   }
 
-  if (matches.length === 0) {
+  const hasDbMatches = matches.length > 0;
+  const hasHistoricalMatches = historicalData && historicalData.totalMatches > 0;
+
+  if (!hasDbMatches && !hasHistoricalMatches && !loadingHistory) {
     return (
       <div className="glass-card rounded-xl p-8 text-center">
         <Trophy className="w-10 h-10 mx-auto mb-3 text-muted-foreground/50" />
         <p className="text-sm text-muted-foreground">
-          No previous meetings between {homeTeam.name} and {awayTeam.name}
+          No previous World Cup meetings between {homeTeam.name} and {awayTeam.name}
         </p>
         <p className="text-xs text-muted-foreground/70 mt-1">
-          This will be their first encounter!
+          This will be their first World Cup encounter!
         </p>
       </div>
     );
   }
 
-  const totalMatches = matches.length;
-
   return (
     <div className="space-y-4">
-      {/* Summary Stats */}
-      {stats && (
-        <div className="glass-card rounded-xl p-4">
-          <h3 className="text-xs font-semibold text-muted-foreground text-center mb-4">
-            {totalMatches} Previous {totalMatches === 1 ? 'Meeting' : 'Meetings'}
-          </h3>
-          
-          <div className="flex items-center justify-between gap-2">
-            {/* Home Team Stats */}
-            <div className="flex-1 text-center">
-              <img 
-                src={homeTeam.flag_url || ''} 
-                alt={homeTeam.name}
-                className="w-10 h-6 object-cover rounded mx-auto mb-2"
-              />
-              <span className="text-xs font-medium block mb-1">{homeTeam.code}</span>
-              <span className="text-2xl font-bold text-primary">{stats.homeWins}</span>
-              <span className="text-xs text-muted-foreground block">Wins</span>
+      {/* Historical World Cup Data */}
+      {loadingHistory ? (
+        <div className="glass-card rounded-xl p-6 flex items-center justify-center gap-2">
+          <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+          <span className="text-xs text-muted-foreground">Loading World Cup history...</span>
+        </div>
+      ) : historicalData && historicalData.totalMatches > 0 ? (
+        <div className="space-y-4">
+          {/* Historical Summary */}
+          <div className="glass-card rounded-xl p-4 border border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5">
+            <div className="flex items-center gap-2 mb-4">
+              <Globe className="w-4 h-4 text-primary" />
+              <h3 className="text-xs font-semibold text-primary">World Cup History</h3>
             </div>
-
-            {/* Draws */}
-            <div className="flex-1 text-center">
-              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center mx-auto mb-2">
-                <Minus className="w-5 h-5 text-muted-foreground" />
+            
+            <div className="flex items-center justify-between gap-2 mb-4">
+              {/* Home Team Wins */}
+              <div className="flex-1 text-center">
+                <img 
+                  src={homeTeam.flag_url || ''} 
+                  alt={homeTeam.name}
+                  className="w-10 h-6 object-cover rounded mx-auto mb-2"
+                />
+                <span className="text-xs font-medium block mb-1">{homeTeam.code}</span>
+                <span className="text-2xl font-bold text-primary">{historicalData.team1Wins}</span>
+                <span className="text-xs text-muted-foreground block">Wins</span>
               </div>
-              <span className="text-2xl font-bold">{stats.draws}</span>
-              <span className="text-xs text-muted-foreground block">Draws</span>
+
+              {/* Draws */}
+              <div className="flex-1 text-center">
+                <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center mx-auto mb-2">
+                  <Minus className="w-5 h-5 text-muted-foreground" />
+                </div>
+                <span className="text-2xl font-bold">{historicalData.draws}</span>
+                <span className="text-xs text-muted-foreground block">Draws</span>
+              </div>
+
+              {/* Away Team Wins */}
+              <div className="flex-1 text-center">
+                <img 
+                  src={awayTeam.flag_url || ''} 
+                  alt={awayTeam.name}
+                  className="w-10 h-6 object-cover rounded mx-auto mb-2"
+                />
+                <span className="text-xs font-medium block mb-1">{awayTeam.code}</span>
+                <span className="text-2xl font-bold text-accent">{historicalData.team2Wins}</span>
+                <span className="text-xs text-muted-foreground block">Wins</span>
+              </div>
             </div>
 
-            {/* Away Team Stats */}
-            <div className="flex-1 text-center">
-              <img 
-                src={awayTeam.flag_url || ''} 
-                alt={awayTeam.name}
-                className="w-10 h-6 object-cover rounded mx-auto mb-2"
+            {/* Notable Stats */}
+            {historicalData.notableStats && (
+              <p className="text-xs text-muted-foreground text-center pt-3 border-t border-border italic">
+                {historicalData.notableStats}
+              </p>
+            )}
+          </div>
+
+          {/* Historical Matches List */}
+          <div className="glass-card rounded-xl overflow-hidden divide-y divide-border">
+            <div className="px-4 py-2 bg-muted/30 flex items-center gap-2">
+              <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-xs font-semibold text-muted-foreground">
+                {historicalData.totalMatches} World Cup {historicalData.totalMatches === 1 ? 'Match' : 'Matches'}
+              </span>
+            </div>
+            {historicalData.matches.map((match, index) => (
+              <HistoricalMatchRow 
+                key={index} 
+                match={match} 
+                homeTeam={homeTeam}
+                awayTeam={awayTeam}
               />
-              <span className="text-xs font-medium block mb-1">{awayTeam.code}</span>
-              <span className="text-2xl font-bold text-accent">{stats.awayWins}</span>
-              <span className="text-xs text-muted-foreground block">Wins</span>
-            </div>
+            ))}
           </div>
+        </div>
+      ) : null}
 
-          {/* Goals */}
-          <div className="flex items-center justify-center gap-4 mt-4 pt-4 border-t border-border">
-            <div className="text-center">
-              <span className="text-lg font-bold">{stats.homeGoals}</span>
-              <span className="text-xs text-muted-foreground ml-1">Goals</span>
+      {/* Current Tournament Matches from DB */}
+      {hasDbMatches && (
+        <>
+          {/* Summary Stats from DB */}
+          {stats && (
+            <div className="glass-card rounded-xl p-4">
+              <h3 className="text-xs font-semibold text-muted-foreground text-center mb-4">
+                World Cup 2026 Matches
+              </h3>
+              
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex-1 text-center">
+                  <span className="text-xs font-medium block mb-1">{homeTeam.code}</span>
+                  <span className="text-2xl font-bold text-primary">{stats.homeWins}</span>
+                  <span className="text-xs text-muted-foreground block">Wins</span>
+                </div>
+
+                <div className="flex-1 text-center">
+                  <span className="text-2xl font-bold">{stats.draws}</span>
+                  <span className="text-xs text-muted-foreground block">Draws</span>
+                </div>
+
+                <div className="flex-1 text-center">
+                  <span className="text-xs font-medium block mb-1">{awayTeam.code}</span>
+                  <span className="text-2xl font-bold text-accent">{stats.awayWins}</span>
+                  <span className="text-xs text-muted-foreground block">Wins</span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-center gap-4 mt-4 pt-4 border-t border-border">
+                <div className="text-center">
+                  <span className="text-lg font-bold">{stats.homeGoals}</span>
+                  <span className="text-xs text-muted-foreground ml-1">Goals</span>
+                </div>
+                <span className="text-muted-foreground">-</span>
+                <div className="text-center">
+                  <span className="text-lg font-bold">{stats.awayGoals}</span>
+                  <span className="text-xs text-muted-foreground ml-1">Goals</span>
+                </div>
+              </div>
             </div>
-            <span className="text-muted-foreground">-</span>
-            <div className="text-center">
-              <span className="text-lg font-bold">{stats.awayGoals}</span>
-              <span className="text-xs text-muted-foreground ml-1">Goals</span>
+          )}
+
+          {/* DB Match History */}
+          <div className="glass-card rounded-xl overflow-hidden divide-y divide-border">
+            <div className="px-4 py-2 bg-muted/30">
+              <span className="text-xs font-semibold text-muted-foreground">This Tournament</span>
             </div>
+            {matches.map((match) => (
+              <MatchHistoryRow key={match.id} match={match} homeTeam={homeTeam} />
+            ))}
           </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function HistoricalMatchRow({ 
+  match, 
+  homeTeam, 
+  awayTeam 
+}: { 
+  match: HistoricalMatch; 
+  homeTeam: Team; 
+  awayTeam: Team;
+}) {
+  const homeWon = match.team1Score > match.team2Score;
+  const awayWon = match.team2Score > match.team1Score;
+
+  return (
+    <div className="p-3">
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-[10px] text-muted-foreground font-medium">
+          {match.tournament}
+        </span>
+        <span className="text-[10px] text-muted-foreground capitalize">
+          {match.stage}
+        </span>
+      </div>
+      
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 flex-1">
+          <img 
+            src={homeTeam.flag_url || ''} 
+            alt={homeTeam.name}
+            className="w-6 h-4 object-cover rounded"
+          />
+          <span className={`text-xs font-medium ${homeWon ? 'text-primary' : ''}`}>
+            {homeTeam.code}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-muted/50">
+          <span className={`text-sm font-bold ${homeWon ? 'text-primary' : ''}`}>
+            {match.team1Score}
+          </span>
+          <span className="text-xs text-muted-foreground">-</span>
+          <span className={`text-sm font-bold ${awayWon ? 'text-accent' : ''}`}>
+            {match.team2Score}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2 flex-1 justify-end">
+          <span className={`text-xs font-medium ${awayWon ? 'text-accent' : ''}`}>
+            {awayTeam.code}
+          </span>
+          <img 
+            src={awayTeam.flag_url || ''} 
+            alt={awayTeam.name}
+            className="w-6 h-4 object-cover rounded"
+          />
+        </div>
+      </div>
+      
+      {match.venue && (
+        <div className="text-[10px] text-muted-foreground/70 mt-1 text-center">
+          {match.venue}
         </div>
       )}
-
-      {/* Match History */}
-      <div className="glass-card rounded-xl overflow-hidden divide-y divide-border">
-        <div className="px-4 py-2 bg-muted/30">
-          <span className="text-xs font-semibold text-muted-foreground">Match History</span>
-        </div>
-        {matches.map((match) => (
-          <MatchHistoryRow key={match.id} match={match} homeTeam={homeTeam} />
-        ))}
-      </div>
     </div>
   );
 }
@@ -212,13 +392,11 @@ function MatchHistoryRow({ match, homeTeam }: { match: HeadToHeadMatch; homeTeam
   const matchDate = new Date(match.match_date);
   const isHomeTeamHome = match.home_team.id === homeTeam.id;
   
-  // Determine the display order based on the current match's home team
   const displayHomeTeam = isHomeTeamHome ? match.home_team : match.away_team;
   const displayAwayTeam = isHomeTeamHome ? match.away_team : match.home_team;
   const displayHomeScore = isHomeTeamHome ? match.home_score : match.away_score;
   const displayAwayScore = isHomeTeamHome ? match.away_score : match.home_score;
 
-  // Determine winner for styling
   const homeWon = (displayHomeScore ?? 0) > (displayAwayScore ?? 0);
   const awayWon = (displayAwayScore ?? 0) > (displayHomeScore ?? 0);
 
