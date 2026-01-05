@@ -62,11 +62,11 @@ export function PlayerDetailCard({ player, onClose }: PlayerDetailCardProps) {
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 py-8 bg-black/60 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
       onClick={onClose}
     >
       <div 
-        className="glass-card w-full max-w-sm rounded-2xl overflow-hidden animate-scale-in my-auto"
+        className="glass-card w-full max-w-sm max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain touch-pan-y rounded-2xl animate-scale-in"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header with gradient */}
