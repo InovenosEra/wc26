@@ -1,5 +1,7 @@
-import { X, Trophy, Target, TrendingUp, Clock, Shirt } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Trophy, Target, TrendingUp, Clock, Shirt, Loader2, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { fetchPlayerProfile, PlayerProfile } from '@/services/footballApi';
 
 export interface PlayerStats {
   playerName: string;
@@ -24,21 +26,45 @@ interface PlayerDetailCardProps {
 }
 
 export function PlayerDetailCard({ player, onClose }: PlayerDetailCardProps) {
-  // Generate mock detailed stats based on player name (for demo purposes)
-  const detailedStats = {
-    position: player.position || 'Forward',
-    age: player.age || Math.floor(Math.random() * 12) + 22,
-    matchesPlayed: player.matchesPlayed ?? Math.floor(Math.random() * 6) + 1,
-    minutesPlayed: player.minutesPlayed ?? Math.floor(Math.random() * 500) + 90,
+  const [profile, setProfile] = useState<PlayerProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      setLoading(true);
+      const data = await fetchPlayerProfile(player.playerName);
+      setProfile(data);
+      setLoading(false);
+    };
+    loadProfile();
+  }, [player.playerName]);
+
+  // Use API data if available, otherwise fall back to passed props or mock
+  const displayData = {
+    name: profile?.displayName || player.playerName,
+    image: profile?.image || player.playerPhoto,
+    position: profile?.position || player.position || 'Forward',
+    age: profile?.age || player.age || Math.floor(Math.random() * 12) + 22,
+    nationality: profile?.nationality || player.nationality,
+    nationalityFlag: profile?.nationalityFlag,
+    height: profile?.height,
+    weight: profile?.weight,
+    currentTeam: profile?.currentTeam?.name || player.teamName,
+    currentTeamLogo: profile?.currentTeam?.logo || player.teamLogo,
     goals: player.goals ?? 0,
     assists: player.assists ?? 0,
     xG: player.xG ?? Math.random() * 3,
+    matchesPlayed: player.matchesPlayed ?? Math.floor(Math.random() * 6) + 1,
+    minutesPlayed: player.minutesPlayed ?? Math.floor(Math.random() * 500) + 90,
     shotsOnTarget: player.shotsOnTarget ?? Math.floor(Math.random() * 15),
     passAccuracy: player.passAccuracy ?? Math.floor(Math.random() * 20) + 75,
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+      onClick={onClose}
+    >
       <div 
         className="glass-card w-full max-w-sm rounded-2xl overflow-hidden animate-scale-in"
         onClick={(e) => e.stopPropagation()}
@@ -53,10 +79,14 @@ export function PlayerDetailCard({ player, onClose }: PlayerDetailCardProps) {
           </button>
           
           <div className="flex items-center gap-4">
-            {player.playerPhoto ? (
+            {loading ? (
+              <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center border-2 border-primary/50">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : displayData.image ? (
               <img
-                src={player.playerPhoto}
-                alt={player.playerName}
+                src={displayData.image}
+                alt={displayData.name}
                 className="w-20 h-20 rounded-full object-cover border-2 border-primary/50 shadow-lg"
               />
             ) : (
@@ -66,22 +96,34 @@ export function PlayerDetailCard({ player, onClose }: PlayerDetailCardProps) {
             )}
             
             <div className="flex-1">
-              <h3 className="text-lg font-bold">{player.playerName}</h3>
+              <h3 className="text-lg font-bold">{displayData.name}</h3>
               <div className="flex items-center gap-2 mt-1">
                 <img
-                  src={player.teamLogo}
-                  alt={player.teamName}
+                  src={displayData.currentTeamLogo}
+                  alt={displayData.currentTeam}
                   className="w-5 h-3.5 object-cover rounded shadow-sm"
                 />
-                <span className="text-sm text-muted-foreground">{player.teamName}</span>
+                <span className="text-sm text-muted-foreground">{displayData.currentTeam}</span>
               </div>
-              <div className="flex items-center gap-3 mt-2">
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
                 <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
-                  {detailedStats.position}
+                  {displayData.position}
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  Age: {detailedStats.age}
+                  Age: {displayData.age}
                 </span>
+                {displayData.nationality && (
+                  <div className="flex items-center gap-1">
+                    {displayData.nationalityFlag && (
+                      <img 
+                        src={displayData.nationalityFlag} 
+                        alt={displayData.nationality}
+                        className="w-4 h-3 object-cover rounded"
+                      />
+                    )}
+                    <span className="text-xs text-muted-foreground">{displayData.nationality}</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -89,12 +131,28 @@ export function PlayerDetailCard({ player, onClose }: PlayerDetailCardProps) {
 
         {/* Key Stats Row */}
         <div className="flex justify-around py-4 px-2 -mt-6 mx-4 bg-card rounded-xl border border-border shadow-lg">
-          <StatBox icon={<Trophy className="w-4 h-4 text-primary" />} value={detailedStats.goals} label="Goals" />
+          <StatBox icon={<Trophy className="w-4 h-4 text-primary" />} value={displayData.goals} label="Goals" />
           <div className="w-px bg-border" />
-          <StatBox icon={<Target className="w-4 h-4 text-accent" />} value={detailedStats.assists} label="Assists" />
+          <StatBox icon={<Target className="w-4 h-4 text-accent" />} value={displayData.assists} label="Assists" />
           <div className="w-px bg-border" />
-          <StatBox icon={<TrendingUp className="w-4 h-4 text-blue-400" />} value={detailedStats.xG.toFixed(1)} label="xG" />
+          <StatBox icon={<TrendingUp className="w-4 h-4 text-blue-400" />} value={displayData.xG.toFixed(1)} label="xG" />
         </div>
+
+        {/* Physical Stats (if available from API) */}
+        {(displayData.height || displayData.weight) && (
+          <div className="mx-4 mt-3 flex justify-center gap-4">
+            {displayData.height > 0 && (
+              <span className="text-xs text-muted-foreground">
+                Height: <span className="font-medium text-foreground">{displayData.height} cm</span>
+              </span>
+            )}
+            {displayData.weight > 0 && (
+              <span className="text-xs text-muted-foreground">
+                Weight: <span className="font-medium text-foreground">{displayData.weight} kg</span>
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Detailed Stats */}
         <div className="p-4 space-y-3">
@@ -106,20 +164,20 @@ export function PlayerDetailCard({ player, onClose }: PlayerDetailCardProps) {
             <DetailStatCard 
               icon={<Clock className="w-4 h-4" />}
               label="Minutes Played"
-              value={detailedStats.minutesPlayed.toString()}
+              value={displayData.minutesPlayed.toString()}
             />
             <DetailStatCard 
               icon={<Shirt className="w-4 h-4" />}
               label="Matches"
-              value={detailedStats.matchesPlayed.toString()}
+              value={displayData.matchesPlayed.toString()}
             />
             <DetailStatCard 
               label="Shots on Target"
-              value={detailedStats.shotsOnTarget.toString()}
+              value={displayData.shotsOnTarget.toString()}
             />
             <DetailStatCard 
               label="Pass Accuracy"
-              value={`${detailedStats.passAccuracy}%`}
+              value={`${displayData.passAccuracy}%`}
             />
           </div>
 
@@ -128,8 +186,8 @@ export function PlayerDetailCard({ player, onClose }: PlayerDetailCardProps) {
             <div className="flex justify-between text-xs mb-1">
               <span className="text-muted-foreground">Goal Conversion</span>
               <span className="font-medium text-primary">
-                {detailedStats.shotsOnTarget > 0 
-                  ? Math.round((detailedStats.goals / detailedStats.shotsOnTarget) * 100) 
+                {displayData.shotsOnTarget > 0 
+                  ? Math.round((displayData.goals / displayData.shotsOnTarget) * 100) 
                   : 0}%
               </span>
             </div>
@@ -137,8 +195,8 @@ export function PlayerDetailCard({ player, onClose }: PlayerDetailCardProps) {
               <div 
                 className="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all"
                 style={{ 
-                  width: `${detailedStats.shotsOnTarget > 0 
-                    ? Math.min((detailedStats.goals / detailedStats.shotsOnTarget) * 100, 100) 
+                  width: `${displayData.shotsOnTarget > 0 
+                    ? Math.min((displayData.goals / displayData.shotsOnTarget) * 100, 100) 
                     : 0}%` 
                 }}
               />
@@ -149,7 +207,7 @@ export function PlayerDetailCard({ player, onClose }: PlayerDetailCardProps) {
         {/* Footer */}
         <div className="p-4 pt-0">
           <p className="text-[10px] text-center text-muted-foreground">
-            Stats update live during tournament matches
+            {profile ? 'Live data from SportMonks' : 'Stats update during tournament'}
           </p>
         </div>
       </div>

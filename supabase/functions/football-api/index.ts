@@ -106,12 +106,37 @@ serve(async (req) => {
         // Get available leagues (useful for finding World Cup ID)
         endpoint = '/leagues';
         params.append('include', 'currentSeason');
-        // Search for World Cup leagues - no filter needed, we'll return all
+        break;
+
+      case 'player':
+        // Get player details by ID
+        const playerId = url.searchParams.get('playerId');
+        if (!playerId) {
+          return new Response(
+            JSON.stringify({ error: 'playerId required' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        endpoint = `/players/${playerId}`;
+        params.append('include', 'position;nationality;teams.team');
+        break;
+
+      case 'playersearch':
+        // Search for player by name
+        const playerName = url.searchParams.get('name');
+        if (!playerName) {
+          return new Response(
+            JSON.stringify({ error: 'name required' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        endpoint = `/players/search/${encodeURIComponent(playerName)}`;
+        params.append('include', 'position;nationality;teams.team');
         break;
 
       default:
         return new Response(
-          JSON.stringify({ error: 'Invalid action. Use: fixtures, live, standings, topscorers, teams, fixture, statistics, leagues' }),
+          JSON.stringify({ error: 'Invalid action. Use: fixtures, live, standings, topscorers, topassists, teams, fixture, statistics, leagues, player, playersearch' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
     }
