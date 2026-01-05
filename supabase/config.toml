@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.h2h-history]
 verify_jwt = false
+
+[functions.fetch-news]
+verify_jwt = false
