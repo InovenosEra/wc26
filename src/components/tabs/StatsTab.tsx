@@ -178,16 +178,25 @@ function ApiGroupStandings({ standings }: { standings: Record<string, FormattedS
           </div>
           
           <div className="overflow-x-auto">
-            <table className="w-full text-xs">
+            <table className="w-full text-xs table-fixed">
+              <colgroup>
+                <col className="w-[45%]" />
+                <col className="w-[9%]" />
+                <col className="w-[9%]" />
+                <col className="w-[9%]" />
+                <col className="w-[9%]" />
+                <col className="w-[9%]" />
+                <col className="w-[10%]" />
+              </colgroup>
               <thead>
                 <tr className="border-b border-border text-muted-foreground">
                   <th className="text-left py-2 px-3 font-medium">Team</th>
-                  <th className="text-center py-2 px-2 font-medium w-8">P</th>
-                  <th className="text-center py-2 px-2 font-medium w-8">W</th>
-                  <th className="text-center py-2 px-2 font-medium w-8">D</th>
-                  <th className="text-center py-2 px-2 font-medium w-8">L</th>
-                  <th className="text-center py-2 px-2 font-medium w-10">GD</th>
-                  <th className="text-center py-2 px-3 font-medium w-10 text-primary">Pts</th>
+                  <th className="text-center py-2 px-1 font-medium">P</th>
+                  <th className="text-center py-2 px-1 font-medium">W</th>
+                  <th className="text-center py-2 px-1 font-medium">D</th>
+                  <th className="text-center py-2 px-1 font-medium">L</th>
+                  <th className="text-center py-2 px-1 font-medium">GD</th>
+                  <th className="text-center py-2 px-1 font-medium text-primary">Pts</th>
                 </tr>
               </thead>
               <tbody>
@@ -201,28 +210,28 @@ function ApiGroupStandings({ standings }: { standings: Record<string, FormattedS
                   >
                     <td className="py-2.5 px-3">
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-muted-foreground w-4 shrink-0">{team.rank}</span>
+                        <span className="text-muted-foreground w-4 shrink-0 text-center">{team.rank}</span>
                         <img 
                           src={team.teamLogo} 
                           alt={team.teamName}
-                          className="w-6 h-6 object-contain shrink-0"
+                          className="w-5 h-5 object-contain shrink-0"
                         />
                         <span className="font-medium truncate">{team.teamName}</span>
                       </div>
                     </td>
-                    <td className="text-center py-2.5 px-2 text-muted-foreground">{team.played}</td>
-                    <td className="text-center py-2.5 px-2 text-muted-foreground">{team.won}</td>
-                    <td className="text-center py-2.5 px-2 text-muted-foreground">{team.drawn}</td>
-                    <td className="text-center py-2.5 px-2 text-muted-foreground">{team.lost}</td>
+                    <td className="text-center py-2.5 px-1 text-muted-foreground">{team.played}</td>
+                    <td className="text-center py-2.5 px-1 text-muted-foreground">{team.won}</td>
+                    <td className="text-center py-2.5 px-1 text-muted-foreground">{team.drawn}</td>
+                    <td className="text-center py-2.5 px-1 text-muted-foreground">{team.lost}</td>
                     <td className={cn(
-                      "text-center py-2.5 px-2",
+                      "text-center py-2.5 px-1",
                       team.goalsDiff > 0 && "text-accent",
                       team.goalsDiff < 0 && "text-destructive",
                       team.goalsDiff === 0 && "text-muted-foreground"
                     )}>
                       {team.goalsDiff > 0 ? `+${team.goalsDiff}` : team.goalsDiff}
                     </td>
-                    <td className="text-center py-2.5 px-3 font-bold text-primary">{team.points}</td>
+                    <td className="text-center py-2.5 px-1 font-bold text-primary">{team.points}</td>
                   </tr>
                 ))}
               </tbody>
