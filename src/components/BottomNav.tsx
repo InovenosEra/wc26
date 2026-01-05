@@ -8,10 +8,10 @@ interface BottomNavProps {
 
 const tabs = [
   { id: 'matches', label: 'Matches', icon: CalendarDays },
-  { id: 'leaderboard', label: 'Leaderboard', icon: Trophy },
-  { id: 'predictions', label: 'My Picks', icon: Target },
   { id: 'stats', label: 'Stats', icon: BarChart3 },
   { id: 'news', label: 'News', icon: Newspaper },
+  { id: 'predictions', label: 'My Picks', icon: Target },
+  { id: 'leaderboard', label: 'Leaderboard', icon: Trophy },
 ];
 
 export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
