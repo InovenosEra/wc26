@@ -124,6 +124,24 @@ export interface FormattedAssist {
   assists: number;
 }
 
+export interface PlayerProfile {
+  id: number;
+  name: string;
+  displayName: string;
+  image: string;
+  position: string;
+  dateOfBirth: string;
+  age: number;
+  nationality: string;
+  nationalityFlag: string;
+  height: number;
+  weight: number;
+  currentTeam?: {
+    name: string;
+    logo: string;
+  };
+}
+
 async function callSportMonksApi(action: string, params?: Record<string, string>): Promise<any> {
   const searchParams = new URLSearchParams({ action, ...params });
   
@@ -238,6 +256,48 @@ export async function fetchTopAssists(): Promise<FormattedAssist[]> {
   } catch (error) {
     console.error('Error fetching top assists:', error);
     return [];
+  }
+}
+
+export async function fetchPlayerProfile(playerName: string): Promise<PlayerProfile | null> {
+  try {
+    const data = await callSportMonksApi('playersearch', { name: playerName });
+    const players = data.data || [];
+    
+    if (players.length === 0) {
+      console.log(`No player found for: ${playerName}`);
+      return null;
+    }
+
+    const player = players[0];
+    
+    // Calculate age from date of birth
+    const dob = player.date_of_birth ? new Date(player.date_of_birth) : null;
+    const age = dob ? Math.floor((Date.now() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : 0;
+
+    // Get current team from teams array
+    const currentTeam = player.teams?.find((t: any) => !t.end)?.team;
+
+    return {
+      id: player.id,
+      name: player.name || player.display_name,
+      displayName: player.display_name || player.name,
+      image: player.image_path || '',
+      position: player.position?.name || 'Unknown',
+      dateOfBirth: player.date_of_birth || '',
+      age,
+      nationality: player.nationality?.name || '',
+      nationalityFlag: player.nationality?.image_path || '',
+      height: player.height || 0,
+      weight: player.weight || 0,
+      currentTeam: currentTeam ? {
+        name: currentTeam.name || '',
+        logo: currentTeam.image_path || '',
+      } : undefined,
+    };
+  } catch (error) {
+    console.error('Error fetching player profile:', error);
+    return null;
   }
 }
 
