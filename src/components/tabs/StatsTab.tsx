@@ -193,19 +193,19 @@ function ApiGroupStandings({ standings, teams }: { standings: Record<string, For
           <div className="overflow-x-auto">
             <table className="w-full text-xs table-fixed">
               <colgroup>
-                <col className="w-[52%]" />
-                <col className="w-[10%]" />
-                <col className="w-[16%]" />
-                <col className="w-[11%]" />
-                <col className="w-[11%]" />
+                <col className="w-auto" />
+                <col className="w-8" />
+                <col className="w-12" />
+                <col className="w-9" />
+                <col className="w-9" />
               </colgroup>
               <thead>
                 <tr className="border-b border-border text-muted-foreground">
-                  <th className="text-left py-2 px-3 font-medium">Team</th>
-                  <th className="text-center py-2 px-1 font-medium">P</th>
-                  <th className="text-center py-2 px-1 font-medium">F:A</th>
-                  <th className="text-center py-2 px-1 font-medium">GD</th>
-                  <th className="text-center py-2 px-1 font-medium text-primary">Pts</th>
+                  <th className="text-left py-2 px-2 font-medium">Team</th>
+                  <th className="text-center py-2 px-0.5 font-medium">P</th>
+                  <th className="text-center py-2 px-0.5 font-medium">F:A</th>
+                  <th className="text-center py-2 px-0.5 font-medium">GD</th>
+                  <th className="text-center py-2 px-0.5 font-medium text-primary">Pts</th>
                 </tr>
               </thead>
               <tbody>
@@ -218,29 +218,29 @@ function ApiGroupStandings({ standings, teams }: { standings: Record<string, For
                       index < 2 && "bg-accent/5"
                     )}
                   >
-                    <td className="py-2.5 px-3">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-muted-foreground w-4 shrink-0 text-center">{team.rank}</span>
+                    <td className="py-2.5 px-2">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="text-muted-foreground w-3 shrink-0 text-center text-[10px]">{team.rank}</span>
                         <img 
                           src={team.teamLogo} 
                           alt={team.teamName}
-                          className="w-5 h-5 object-contain shrink-0"
+                          className="w-4 h-4 object-contain shrink-0"
                         />
                         <span className="font-medium truncate">{team.teamName}</span>
                         <ChevronRight className="w-3 h-3 text-muted-foreground ml-auto shrink-0" />
                       </div>
                     </td>
-                    <td className="text-center py-2.5 px-1 text-muted-foreground">{team.played}</td>
-                    <td className="text-center py-2.5 px-1 text-muted-foreground">{team.goalsFor}:{team.goalsAgainst}</td>
+                    <td className="text-center py-2.5 px-0.5 text-muted-foreground">{team.played}</td>
+                    <td className="text-center py-2.5 px-0.5 text-muted-foreground text-[10px]">{team.goalsFor}:{team.goalsAgainst}</td>
                     <td className={cn(
-                      "text-center py-2.5 px-1",
+                      "text-center py-2.5 px-0.5 text-[10px]",
                       team.goalsDiff > 0 && "text-accent",
                       team.goalsDiff < 0 && "text-destructive",
                       team.goalsDiff === 0 && "text-muted-foreground"
                     )}>
                       {team.goalsDiff > 0 ? `+${team.goalsDiff}` : team.goalsDiff}
                     </td>
-                    <td className="text-center py-2.5 px-1 font-bold text-primary">{team.points}</td>
+                    <td className="text-center py-2.5 px-0.5 font-bold text-primary">{team.points}</td>
                   </tr>
                 ))}
               </tbody>
