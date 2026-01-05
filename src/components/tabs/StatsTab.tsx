@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   fetchStandings, 
@@ -154,7 +155,7 @@ export function StatsTab() {
       {/* Content */}
       {view === 'standings' ? (
         hasApiStandings ? (
-          <ApiGroupStandings standings={apiStandings} />
+          <ApiGroupStandings standings={apiStandings} teams={teams} />
         ) : (
           <GroupStandings teams={teams} />
         )
@@ -166,8 +167,20 @@ export function StatsTab() {
 }
 
 // API-powered group standings
-function ApiGroupStandings({ standings }: { standings: Record<string, FormattedStanding[]> }) {
+function ApiGroupStandings({ standings, teams }: { standings: Record<string, FormattedStanding[]>; teams: Team[] }) {
+  const navigate = useNavigate();
   const groups = Object.keys(standings).sort();
+
+  const handleTeamClick = (teamName: string) => {
+    // Find team ID from teams list by matching name
+    const team = teams.find(t => 
+      t.name.toLowerCase() === teamName.toLowerCase() ||
+      t.code.toLowerCase() === teamName.toLowerCase()
+    );
+    if (team) {
+      navigate(`/team/${team.id}`);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -203,8 +216,9 @@ function ApiGroupStandings({ standings }: { standings: Record<string, FormattedS
                 {standings[groupName].map((team, index) => (
                   <tr 
                     key={team.teamName}
+                    onClick={() => handleTeamClick(team.teamName)}
                     className={cn(
-                      "border-b border-border/50 last:border-0",
+                      "border-b border-border/50 last:border-0 cursor-pointer hover:bg-secondary/30 transition-colors",
                       index < 2 && "bg-accent/5"
                     )}
                   >
@@ -217,6 +231,7 @@ function ApiGroupStandings({ standings }: { standings: Record<string, FormattedS
                           className="w-5 h-5 object-contain shrink-0"
                         />
                         <span className="font-medium truncate">{team.teamCode}</span>
+                        <ChevronRight className="w-3 h-3 text-muted-foreground ml-auto shrink-0" />
                       </div>
                     </td>
                     <td className="text-center py-2.5 px-1 text-muted-foreground">{team.played}</td>
