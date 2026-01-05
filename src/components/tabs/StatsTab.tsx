@@ -18,7 +18,7 @@ import { Loader2, BarChart3, Users, Wifi, WifiOff, RefreshCw, ChevronRight, Trop
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-type ViewType = 'standings' | 'knockout' | 'qualifiers' | 'scorers';
+type ViewType = 'qualifiers' | 'standings' | 'knockout' | 'scorers';
 
 export function StatsTab() {
   const [teams, setTeams] = useState<Team[]>([]);
@@ -26,7 +26,7 @@ export function StatsTab() {
   const [topScorers, setTopScorers] = useState<FormattedTopScorer[]>([]);
   const [topAssists, setTopAssists] = useState<FormattedAssist[]>([]);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<ViewType>('standings');
+  const [view, setView] = useState<ViewType>('qualifiers');
   const [apiConnected, setApiConnected] = useState<boolean | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -127,6 +127,20 @@ export function StatsTab() {
         <Button
           variant="ghost"
           size="sm"
+          onClick={() => setView('qualifiers')}
+          className={cn(
+            "h-8 px-2.5 text-[10px] whitespace-nowrap",
+            view === 'qualifiers' 
+              ? "bg-primary/10 text-primary border border-primary/30" 
+              : "text-muted-foreground"
+          )}
+        >
+          <Flag className="w-3 h-3 mr-1" />
+          Qualifiers
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => setView('standings')}
           className={cn(
             "h-8 px-2.5 text-[10px] whitespace-nowrap",
@@ -151,20 +165,6 @@ export function StatsTab() {
         >
           <Trophy className="w-3 h-3 mr-1" />
           Knockout
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setView('qualifiers')}
-          className={cn(
-            "h-8 px-2.5 text-[10px] whitespace-nowrap",
-            view === 'qualifiers' 
-              ? "bg-primary/10 text-primary border border-primary/30" 
-              : "text-muted-foreground"
-          )}
-        >
-          <Flag className="w-3 h-3 mr-1" />
-          Qualifiers
         </Button>
         <Button
           variant="ghost"
