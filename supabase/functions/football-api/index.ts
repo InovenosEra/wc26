@@ -44,6 +44,29 @@ serve(async (req) => {
         params.append('filters', `fixtureSeasons:${WORLD_CUP_SEASON_ID}`);
         break;
 
+      case 'qualifiers':
+        // Get World Cup qualification fixtures (inter-confederation & UEFA playoffs)
+        // UEFA World Cup Qualifiers Season ID and Inter-confederation playoff
+        const qualSeasonId = url.searchParams.get('seasonId');
+        endpoint = '/fixtures';
+        params.append('include', 'participants;venue;state;scores;round;stage');
+        params.append('per_page', '50');
+        if (qualSeasonId) {
+          params.append('filters', `fixtureSeasons:${qualSeasonId}`);
+        } else {
+          // Default: search by date range for March 2026 playoffs
+          params.append('filters', 'fixtureStartingAtFrom:2026-03-20;fixtureStartingAtTo:2026-04-05');
+        }
+        break;
+
+      case 'qualification-seasons':
+        // Get World Cup qualification leagues/seasons
+        endpoint = '/leagues';
+        params.append('include', 'currentSeason');
+        // Search for World Cup qualifiers
+        params.append('filters', 'name:World Cup');
+        break;
+
       case 'live':
         // Get live/inplay fixtures
         endpoint = '/livescores/inplay';
@@ -136,7 +159,7 @@ serve(async (req) => {
 
       default:
         return new Response(
-          JSON.stringify({ error: 'Invalid action. Use: fixtures, live, standings, topscorers, topassists, teams, fixture, statistics, leagues, player, playersearch' }),
+          JSON.stringify({ error: 'Invalid action. Use: fixtures, qualifiers, qualification-seasons, live, standings, topscorers, topassists, teams, fixture, statistics, leagues, player, playersearch' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
     }
