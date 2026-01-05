@@ -37,10 +37,11 @@ serve(async (req) => {
 
     switch (action) {
       case 'fixtures':
-        // Get fixtures for World Cup 2026 season
-        endpoint = `/fixtures/seasons/${WORLD_CUP_SEASON_ID}`;
+        // Get fixtures for World Cup 2026 season using filters
+        endpoint = '/fixtures';
         params.append('include', 'participants;venue;state;scores');
         params.append('per_page', '100');
+        params.append('filters', `fixtureSeasons:${WORLD_CUP_SEASON_ID}`);
         break;
 
       case 'live':
