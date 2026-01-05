@@ -98,7 +98,7 @@ serve(async (req) => {
         // Get available leagues (useful for finding World Cup ID)
         endpoint = '/leagues';
         params.append('include', 'currentSeason');
-        params.append('filters', 'name:World Cup');
+        // Search for World Cup leagues - no filter needed, we'll return all
         break;
 
       default:
