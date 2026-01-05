@@ -194,14 +194,14 @@ function ApiGroupStandings({ standings }: { standings: Record<string, FormattedS
                     )}
                   >
                     <td className="py-2.5 px-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground w-4">{team.rank}</span>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-muted-foreground w-4 shrink-0">{team.rank}</span>
                         <img 
                           src={team.teamLogo} 
                           alt={team.teamName}
-                          className="w-6 h-6 object-contain"
+                          className="w-6 h-6 object-contain shrink-0"
                         />
-                        <span className="font-medium truncate max-w-[80px]">{team.teamName}</span>
+                        <span className="font-medium truncate">{team.teamName}</span>
                       </div>
                     </td>
                     <td className="text-center py-2.5 px-2 text-muted-foreground">{team.played}</td>

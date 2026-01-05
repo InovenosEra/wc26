@@ -64,14 +64,14 @@ export function GroupStandings({ teams }: GroupStandingsProps) {
                       )}
                     >
                       <td className="py-2.5 px-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-muted-foreground w-4">{index + 1}</span>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-muted-foreground w-4 shrink-0">{index + 1}</span>
                           <img 
                             src={team.flag_url || ''} 
                             alt={team.name}
-                            className="w-6 h-4 object-cover rounded shadow-sm"
+                            className="w-6 h-4 object-cover rounded shadow-sm shrink-0"
                           />
-                          <span className="font-medium">{team.code}</span>
+                          <span className="font-medium truncate">{team.name}</span>
                         </div>
                       </td>
                       <td className="text-center py-2.5 px-2 text-muted-foreground">{stats.played}</td>
