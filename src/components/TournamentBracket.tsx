@@ -1,6 +1,9 @@
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { Trophy, Flag, Calendar, MapPin } from 'lucide-react';
+import { Trophy, Flag, Calendar, MapPin, Loader2, RefreshCw, Wifi, WifiOff } from 'lucide-react';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
+import { fetchQualificationFixtures, QualificationFixture, checkApiConnection } from '@/services/footballApi';
 
 interface BracketMatch {
   id: string;
@@ -565,13 +568,98 @@ export function KnockoutBracket() {
 }
 
 export function QualificationBracket() {
+  const [liveFixtures, setLiveFixtures] = useState<QualificationFixture[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [apiConnected, setApiConnected] = useState<boolean | null>(null);
+
+  const fetchData = async () => {
+    setLoading(true);
+    const connected = await checkApiConnection();
+    setApiConnected(connected);
+    
+    if (connected) {
+      const fixtures = await fetchQualificationFixtures();
+      setLiveFixtures(fixtures);
+    }
+    setLoading(false);
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchData();
+    setRefreshing(false);
+  };
+
+  useEffect(() => {
+    fetchData();
+    // Auto-refresh every 60 seconds for live updates
+    const interval = setInterval(fetchData, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Merge live data with static fallback data
+  const mergeWithLiveData = (staticMatch: BracketMatch): BracketMatch => {
+    // Try to find a matching fixture from live data
+    const liveMatch = liveFixtures.find(f => 
+      (f.homeTeam.toLowerCase().includes(staticMatch.homeTeam.toLowerCase()) ||
+       staticMatch.homeTeam.toLowerCase().includes(f.homeTeam.toLowerCase())) &&
+      (f.awayTeam.toLowerCase().includes(staticMatch.awayTeam.toLowerCase()) ||
+       staticMatch.awayTeam.toLowerCase().includes(f.awayTeam.toLowerCase()))
+    );
+
+    if (liveMatch) {
+      return {
+        ...staticMatch,
+        homeTeam: liveMatch.homeTeam,
+        awayTeam: liveMatch.awayTeam,
+        homeFlag: liveMatch.homeFlag || staticMatch.homeFlag,
+        awayFlag: liveMatch.awayFlag || staticMatch.awayFlag,
+        homeScore: liveMatch.homeScore,
+        awayScore: liveMatch.awayScore,
+        status: liveMatch.status,
+        venue: liveMatch.venue || staticMatch.venue,
+      };
+    }
+    return staticMatch;
+  };
+
+  // Apply live data to playoff paths
+  const getLivePlayoffPath = (path: PlayoffPath): PlayoffPath => ({
+    ...path,
+    semifinal1: mergeWithLiveData(path.semifinal1),
+    semifinal2: path.semifinal2 ? mergeWithLiveData(path.semifinal2) : undefined,
+    final: mergeWithLiveData(path.final),
+  });
+
   return (
     <div className="space-y-4">
       {/* Header */}
       <div className="glass-card rounded-xl overflow-hidden animate-slide-up">
-        <div className="px-4 py-3 bg-secondary/50 border-b border-border flex items-center gap-2">
-          <Flag className="w-4 h-4 text-primary" />
-          <h3 className="text-sm font-bold text-primary">Remaining Qualification</h3>
+        <div className="px-4 py-3 bg-secondary/50 border-b border-border flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Flag className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-bold text-primary">Remaining Qualification</h3>
+          </div>
+          <div className="flex items-center gap-2">
+            {/* API Status */}
+            <div className={cn(
+              "flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium",
+              apiConnected ? "bg-accent/20 text-accent" : "bg-muted text-muted-foreground"
+            )}>
+              {apiConnected ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
+              {apiConnected ? 'Live' : 'Offline'}
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleRefresh}
+              disabled={refreshing || loading}
+              className="h-7 w-7"
+            >
+              <RefreshCw className={cn("w-3.5 h-3.5", (refreshing || loading) && "animate-spin")} />
+            </Button>
+          </div>
         </div>
         <div className="p-3 space-y-2">
           <div className="flex justify-between text-xs">
@@ -587,39 +675,83 @@ export function QualificationBracket() {
         </div>
       </div>
 
-      {/* UEFA European Playoffs */}
-      <div className="glass-card rounded-xl overflow-hidden animate-slide-up">
-        <div className="px-4 py-3 bg-secondary/50 border-b border-border">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold">UEFA European Playoffs</h3>
-            <span className="text-xs text-primary font-medium">4 qualifiers</span>
-          </div>
-          <p className="text-[10px] text-muted-foreground mt-1">
-            16 teams competing for 4 World Cup spots
-          </p>
+      {loading ? (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
         </div>
-      </div>
+      ) : (
+        <>
+          {/* Live Fixtures from API (if any) */}
+          {liveFixtures.length > 0 && (
+            <div className="glass-card rounded-xl overflow-hidden animate-slide-up">
+              <div className="px-4 py-3 bg-accent/20 border-b border-accent/30">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-accent">Live Qualification Matches</h3>
+                  <span className="text-xs text-accent font-medium animate-pulse">● LIVE</span>
+                </div>
+              </div>
+              <div className="p-3 space-y-2">
+                {liveFixtures.filter(f => f.status === 'live').map((fixture) => (
+                  <QualifierMatchCard 
+                    key={fixture.id} 
+                    match={{
+                      id: String(fixture.id),
+                      homeTeam: fixture.homeTeam,
+                      awayTeam: fixture.awayTeam,
+                      homeFlag: fixture.homeFlag,
+                      awayFlag: fixture.awayFlag,
+                      homeScore: fixture.homeScore,
+                      awayScore: fixture.awayScore,
+                      status: fixture.status,
+                      date: new Date(fixture.date).toLocaleDateString(),
+                      venue: fixture.venue,
+                    }} 
+                  />
+                ))}
+                {liveFixtures.filter(f => f.status === 'live').length === 0 && (
+                  <p className="text-xs text-muted-foreground text-center py-2">
+                    No live matches at the moment
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
 
-      {uefaPlayoffs.map((path) => (
-        <PlayoffPathBracket key={path.name} path={path} />
-      ))}
-
-      {/* Intercontinental Playoffs */}
-      <div className="glass-card rounded-xl overflow-hidden animate-slide-up mt-6">
-        <div className="px-4 py-3 bg-secondary/50 border-b border-border">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold">Intercontinental Playoffs</h3>
-            <span className="text-xs text-primary font-medium">2 qualifiers</span>
+          {/* UEFA European Playoffs */}
+          <div className="glass-card rounded-xl overflow-hidden animate-slide-up">
+            <div className="px-4 py-3 bg-secondary/50 border-b border-border">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold">UEFA European Playoffs</h3>
+                <span className="text-xs text-primary font-medium">4 qualifiers</span>
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                16 teams competing for 4 World Cup spots
+              </p>
+            </div>
           </div>
-          <p className="text-[10px] text-muted-foreground mt-1">
-            Hosted in Mexico (Monterrey & Guadalajara)
-          </p>
-        </div>
-      </div>
 
-      {intercontinentalPlayoffs.map((path) => (
-        <PlayoffPathBracket key={path.name} path={path} />
-      ))}
+          {uefaPlayoffs.map((path) => (
+            <PlayoffPathBracket key={path.name} path={getLivePlayoffPath(path)} />
+          ))}
+
+          {/* Intercontinental Playoffs */}
+          <div className="glass-card rounded-xl overflow-hidden animate-slide-up mt-6">
+            <div className="px-4 py-3 bg-secondary/50 border-b border-border">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold">Intercontinental Playoffs</h3>
+                <span className="text-xs text-primary font-medium">2 qualifiers</span>
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Hosted in Mexico (Monterrey & Guadalajara)
+              </p>
+            </div>
+          </div>
+
+          {intercontinentalPlayoffs.map((path) => (
+            <PlayoffPathBracket key={path.name} path={getLivePlayoffPath(path)} />
+          ))}
+        </>
+      )}
     </div>
   );
 }

@@ -125,6 +125,21 @@ export interface FormattedAssist {
   assists: number;
 }
 
+export interface QualificationFixture {
+  id: number;
+  homeTeam: string;
+  awayTeam: string;
+  homeFlag: string;
+  awayFlag: string;
+  homeScore: number | null;
+  awayScore: number | null;
+  date: string;
+  venue: string;
+  status: 'scheduled' | 'live' | 'completed' | 'tbd';
+  round: string;
+  stage: string;
+}
+
 export interface PlayerProfile {
   id: number;
   name: string;
@@ -257,6 +272,49 @@ export async function fetchTopAssists(): Promise<FormattedAssist[]> {
     }));
   } catch (error) {
     console.error('Error fetching top assists:', error);
+    return [];
+  }
+}
+
+export async function fetchQualificationFixtures(): Promise<QualificationFixture[]> {
+  try {
+    const data = await callSportMonksApi('qualifiers');
+    const fixtures = data.data || [];
+    
+    return fixtures.map((fixture: any) => {
+      // Determine status from state
+      let status: 'scheduled' | 'live' | 'completed' | 'tbd' = 'scheduled';
+      const stateShort = fixture.state?.short_name || 'NS';
+      
+      if (['LIVE', '1H', '2H', 'HT', 'ET', 'PEN_LIVE', 'BT'].includes(stateShort)) {
+        status = 'live';
+      } else if (['FT', 'AET', 'FT_PEN'].includes(stateShort)) {
+        status = 'completed';
+      }
+
+      const homeTeam = fixture.participants?.find((p: any) => p.meta?.location === 'home');
+      const awayTeam = fixture.participants?.find((p: any) => p.meta?.location === 'away');
+      
+      const homeScore = fixture.scores?.find((s: any) => s.participant_id === homeTeam?.id)?.score?.goals ?? null;
+      const awayScore = fixture.scores?.find((s: any) => s.participant_id === awayTeam?.id)?.score?.goals ?? null;
+
+      return {
+        id: fixture.id,
+        homeTeam: homeTeam?.name || 'TBD',
+        awayTeam: awayTeam?.name || 'TBD',
+        homeFlag: homeTeam?.image_path || '',
+        awayFlag: awayTeam?.image_path || '',
+        homeScore,
+        awayScore,
+        date: fixture.starting_at || '',
+        venue: fixture.venue?.city_name || fixture.venue?.name || '',
+        status,
+        round: fixture.round?.name || '',
+        stage: fixture.stage?.name || '',
+      };
+    });
+  } catch (error) {
+    console.error('Error fetching qualification fixtures:', error);
     return [];
   }
 }
