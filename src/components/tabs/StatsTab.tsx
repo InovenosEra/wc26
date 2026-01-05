@@ -436,19 +436,25 @@ function PlayerStatRow({
         {rank}
       </span>
       
-      {playerPhoto ? (
-        <img 
-          src={playerPhoto} 
-          alt={playerName}
-          className="w-8 h-8 rounded-full object-cover"
-        />
-      ) : (
-        <img 
-          src={teamLogo} 
-          alt={teamName}
-          className="w-6 h-4 object-cover rounded shadow-sm"
-        />
-      )}
+      <div className="w-8 h-8 rounded-full overflow-hidden bg-muted flex items-center justify-center shrink-0">
+        {playerPhoto ? (
+          <img 
+            src={playerPhoto} 
+            alt={playerName}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+              e.currentTarget.parentElement!.innerHTML = `<img src="${teamLogo}" alt="${teamName}" class="w-5 h-4 object-contain" />`;
+            }}
+          />
+        ) : (
+          <img 
+            src={teamLogo} 
+            alt={teamName}
+            className="w-5 h-4 object-contain"
+          />
+        )}
+      </div>
       
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate">{playerName}</p>
