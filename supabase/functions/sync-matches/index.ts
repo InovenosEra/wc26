@@ -77,66 +77,89 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    console.log('Fetching fixtures from SportMonks by date range...');
+    console.log('Fetching fixtures from SportMonks...');
 
-    // Fetch fixtures using season filter for World Cup 2026
-    const params = new URLSearchParams();
-    params.append('api_token', apiKey);
-    params.append('include', 'participants;venue;state;scores;stage;round');
-    params.append('per_page', '150');
-    // Use filters parameter with season_id
-    params.append('filters', `fixtureSeasons:${WORLD_CUP_SEASON_ID}`);
+    // Fetch all fixtures for World Cup 2026 season - fetch all pages
+    let allFixtures: SportMonksFixture[] = [];
+    let currentPage = 1;
+    let hasMore = true;
 
-    const apiUrl = `${SPORTMONKS_BASE}/fixtures?${params.toString()}`;
-    
-    console.log('Calling SportMonks fixtures endpoint...');
-    
-    const response = await fetch(apiUrl);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('SportMonks API error:', response.status, errorText);
-      return new Response(
-        JSON.stringify({ error: `API error: ${response.status}`, details: errorText }),
-        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    while (hasMore && currentPage <= 20) { // Safety limit of 20 pages
+      const params = new URLSearchParams();
+      params.append('api_token', apiKey);
+      params.append('include', 'participants;venue;state;scores;stage;round');
+      params.append('per_page', '100');
+      params.append('page', currentPage.toString());
 
-    const data = await response.json();
-    let fixtures: SportMonksFixture[] = data.data || [];
-    
-    console.log(`Fetched ${fixtures.length} fixtures from SportMonks`);
-    console.log(`Pagination: ${JSON.stringify(data.pagination || {})}`);
-
-    // Handle pagination - fetch all pages
-    if (data.pagination && data.pagination.has_more) {
-      let currentPage = 1;
-      const totalPages = Math.ceil((data.pagination.count || 0) / (data.pagination.per_page || 100));
+      const apiUrl = `${SPORTMONKS_BASE}/fixtures/seasons/${WORLD_CUP_SEASON_ID}?${params.toString()}`;
       
-      while (currentPage < totalPages && currentPage < 10) { // Safety limit
-        currentPage++;
-        const pageParams = new URLSearchParams(params);
-        pageParams.append('page', currentPage.toString());
+      console.log(`Fetching page ${currentPage}...`);
+      
+      const response = await fetch(apiUrl);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('SportMonks API error:', response.status, errorText);
         
-        const pageUrl = `${SPORTMONKS_BASE}/fixtures?${pageParams.toString()}`;
-        const pageResponse = await fetch(pageUrl);
-        
-        if (pageResponse.ok) {
-          const pageData = await pageResponse.json();
-          fixtures = fixtures.concat(pageData.data || []);
-          console.log(`Page ${currentPage}: added ${pageData.data?.length || 0} fixtures`);
+        // If 404, try alternative endpoint
+        if (response.status === 404 && currentPage === 1) {
+          console.log('Trying alternative fixtures endpoint...');
+          const altParams = new URLSearchParams();
+          altParams.append('api_token', apiKey);
+          altParams.append('include', 'participants;venue;state;scores;stage;round');
+          altParams.append('per_page', '100');
+          altParams.append('filters', `fixtureSeasons:${WORLD_CUP_SEASON_ID}`);
+          
+          const altUrl = `${SPORTMONKS_BASE}/fixtures?${altParams.toString()}`;
+          const altResponse = await fetch(altUrl);
+          
+          if (altResponse.ok) {
+            const altData = await altResponse.json();
+            allFixtures = altData.data || [];
+            hasMore = altData.pagination?.has_more || false;
+            
+            // Fetch remaining pages from alt endpoint
+            while (hasMore && currentPage < 20) {
+              currentPage++;
+              altParams.set('page', currentPage.toString());
+              const pageResponse = await fetch(`${SPORTMONKS_BASE}/fixtures?${altParams.toString()}`);
+              if (pageResponse.ok) {
+                const pageData = await pageResponse.json();
+                allFixtures = allFixtures.concat(pageData.data || []);
+                hasMore = pageData.pagination?.has_more || false;
+                console.log(`Alt page ${currentPage}: ${pageData.data?.length || 0} fixtures`);
+              } else {
+                hasMore = false;
+              }
+            }
+            break;
+          }
         }
+        
+        return new Response(
+          JSON.stringify({ error: `API error: ${response.status}`, details: errorText }),
+          { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
+
+      const data = await response.json();
+      const pageFixtures = data.data || [];
+      allFixtures = allFixtures.concat(pageFixtures);
+      
+      console.log(`Page ${currentPage}: ${pageFixtures.length} fixtures`);
+      
+      hasMore = data.pagination?.has_more || false;
+      currentPage++;
     }
 
+    const fixtures = allFixtures;
     console.log(`Total fixtures fetched: ${fixtures.length}`);
 
     if (fixtures.length === 0) {
       return new Response(
         JSON.stringify({ 
           message: 'No fixtures found in SportMonks API', 
-          synced: 0,
-          apiResponse: data 
+          synced: 0
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
