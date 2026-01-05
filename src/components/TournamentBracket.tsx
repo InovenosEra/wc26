@@ -4,6 +4,7 @@ import { Trophy, Flag, Calendar, MapPin, Loader2, RefreshCw, Wifi, WifiOff } fro
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { fetchQualificationFixtures, QualificationFixture, checkApiConnection } from '@/services/footballApi';
+import { PlayoffH2H } from '@/components/PlayoffH2H';
 
 interface BracketMatch {
   id: string;
@@ -289,9 +290,14 @@ function TreeMatchCard({ match, size = 'normal' }: { match: BracketMatch; size?:
   );
 }
 
-// Match card for qualifiers (larger, more detailed)
-function QualifierMatchCard({ match }: { match: BracketMatch }) {
+// Match card for qualifiers (larger, more detailed) with H2H
+function QualifierMatchCard({ match, showH2H = false }: { match: BracketMatch; showH2H?: boolean }) {
   const isTbd = match.status === 'tbd';
+  const canShowH2H = showH2H && !isTbd && 
+    !match.homeTeam.includes('Winner') && 
+    !match.homeTeam.includes('TBD') &&
+    !match.awayTeam.includes('Winner') &&
+    !match.awayTeam.includes('TBD');
   
   return (
     <div className={cn(
@@ -349,6 +355,16 @@ function QualifierMatchCard({ match }: { match: BracketMatch }) {
           )}
         </div>
       </div>
+      
+      {/* H2H Section */}
+      {canShowH2H && (
+        <PlayoffH2H 
+          homeTeam={match.homeTeam}
+          awayTeam={match.awayTeam}
+          homeFlag={match.homeFlag}
+          awayFlag={match.awayFlag}
+        />
+      )}
     </div>
   );
 }
@@ -365,8 +381,8 @@ function PlayoffPathBracket({ path }: { path: PlayoffPath }) {
           {/* Semi-finals column */}
           <div className="flex flex-col gap-2 flex-1">
             <div className="text-[8px] text-muted-foreground text-center mb-1">Semi-final</div>
-            <QualifierMatchCard match={path.semifinal1} />
-            {path.semifinal2 && <QualifierMatchCard match={path.semifinal2} />}
+            <QualifierMatchCard match={path.semifinal1} showH2H={true} />
+            {path.semifinal2 && <QualifierMatchCard match={path.semifinal2} showH2H={true} />}
           </div>
           
           {/* Connector */}
@@ -386,7 +402,7 @@ function PlayoffPathBracket({ path }: { path: PlayoffPath }) {
           {/* Final column */}
           <div className="flex flex-col gap-2 flex-1">
             <div className="text-[8px] text-muted-foreground text-center mb-1">Final</div>
-            <QualifierMatchCard match={path.final} />
+            <QualifierMatchCard match={path.final} showH2H={false} />
           </div>
         </div>
       </div>
