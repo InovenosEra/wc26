@@ -12,11 +12,13 @@ import {
   Loader2,
   Target,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  Swords
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MatchFact } from '@/components/MatchFact';
+import { HeadToHead } from '@/components/HeadToHead';
 import { cn } from '@/lib/utils';
 
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/football-api`;
@@ -62,7 +64,7 @@ export default function MatchDetail() {
   const [events, setEvents] = useState<MatchEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState('stats');
+  const [activeTab, setActiveTab] = useState('h2h');
 
   useEffect(() => {
     if (matchId) {
@@ -317,6 +319,10 @@ export default function MatchDetail() {
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
           <TabsList className="w-full bg-card border border-border">
+            <TabsTrigger value="h2h" className="flex-1 text-xs">
+              <Swords className="w-3.5 h-3.5 mr-1.5" />
+              H2H
+            </TabsTrigger>
             <TabsTrigger value="stats" className="flex-1 text-xs">
               <BarChart3 className="w-3.5 h-3.5 mr-1.5" />
               Stats
@@ -330,6 +336,15 @@ export default function MatchDetail() {
               Events
             </TabsTrigger>
           </TabsList>
+
+          {/* Head to Head Tab */}
+          <TabsContent value="h2h" className="mt-4">
+            <HeadToHead 
+              homeTeam={match.home_team}
+              awayTeam={match.away_team}
+              currentMatchId={match.id}
+            />
+          </TabsContent>
 
           {/* Statistics Tab */}
           <TabsContent value="stats" className="mt-4">
