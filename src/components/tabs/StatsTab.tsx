@@ -216,7 +216,7 @@ function ApiGroupStandings({ standings }: { standings: Record<string, FormattedS
                           alt={team.teamName}
                           className="w-5 h-5 object-contain shrink-0"
                         />
-                        <span className="font-medium truncate">{team.teamName}</span>
+                        <span className="font-medium truncate">{team.teamCode}</span>
                       </div>
                     </td>
                     <td className="text-center py-2.5 px-1 text-muted-foreground">{team.played}</td>
