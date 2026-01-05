@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Newspaper, ExternalLink, Clock, Filter, X, Search } from 'lucide-react';
+import { Newspaper, ExternalLink, Clock, Filter, X, Search, RefreshCw, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,83 +14,21 @@ interface Team {
   flag_url: string | null;
 }
 
-const mockNews = [
-  {
-    id: 1,
-    title: "FIFA Announces Final World Cup 2026 Venues",
-    summary: "The 16 host cities across USA, Canada, and Mexico have been confirmed for the expanded 48-team tournament.",
-    source: "FIFA.com",
-    date: "2 hours ago",
-    imageUrl: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=400&h=200&fit=crop",
-    teams: [], // General news, no specific team
-  },
-  {
-    id: 2,
-    title: "Argentina Prepares to Defend World Cup Title",
-    summary: "Lionel Messi and the defending champions begin their preparation for the tournament with a training camp.",
-    source: "ESPN",
-    date: "5 hours ago",
-    imageUrl: "https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=400&h=200&fit=crop",
-    teams: ["ARG"],
-  },
-  {
-    id: 3,
-    title: "New Format Explained: 48 Teams, 104 Matches",
-    summary: "Everything you need to know about the expanded World Cup format with 12 groups of 4 teams each.",
-    source: "BBC Sport",
-    date: "1 day ago",
-    imageUrl: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=400&h=200&fit=crop",
-    teams: [],
-  },
-  {
-    id: 4,
-    title: "Rising Stars to Watch at World Cup 2026",
-    summary: "From Bellingham to Yamal, the young talents expected to shine on the world stage.",
-    source: "Sky Sports",
-    date: "2 days ago",
-    imageUrl: "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=400&h=200&fit=crop",
-    teams: ["ENG", "ESP"],
-  },
-  {
-    id: 5,
-    title: "USA Announces Preliminary Squad for Home World Cup",
-    summary: "Christian Pulisic leads the 35-man preliminary roster for the historic home tournament.",
-    source: "US Soccer",
-    date: "3 days ago",
-    imageUrl: "https://images.unsplash.com/photo-1551958219-acbc608c6377?w=400&h=200&fit=crop",
-    teams: ["USA"],
-  },
-  {
-    id: 6,
-    title: "Mexico Eyes Strong Performance as Co-Host",
-    summary: "El Tri aims to break their Round of 16 curse with home advantage on their side.",
-    source: "ESPN Deportes",
-    date: "3 days ago",
-    imageUrl: "https://images.unsplash.com/photo-1489944440615-453fc2b6a9a9?w=400&h=200&fit=crop",
-    teams: ["MEX"],
-  },
-  {
-    id: 7,
-    title: "Brazil Rebuilding Under New Coach",
-    summary: "The Seleção looks to bounce back after disappointing Qatar 2022 campaign.",
-    source: "Goal.com",
-    date: "4 days ago",
-    imageUrl: "https://images.unsplash.com/photo-1518091043644-c1d4457512c6?w=400&h=200&fit=crop",
-    teams: ["BRA"],
-  },
-  {
-    id: 8,
-    title: "France vs Germany: Group Stage Clash Preview",
-    summary: "Two European giants set to face off in what could be the match of the group stage.",
-    source: "L'Équipe",
-    date: "5 days ago",
-    imageUrl: "https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=400&h=200&fit=crop",
-    teams: ["FRA", "GER"],
-  },
-];
+interface NewsArticle {
+  id: string;
+  title: string;
+  summary: string;
+  source: string;
+  date: string;
+  imageUrl: string;
+  url?: string;
+  teams: string[];
+}
 
 export function NewsTab() {
   const [teams, setTeams] = useState<Team[]>([]);
+  const [news, setNews] = useState<NewsArticle[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -98,6 +36,7 @@ export function NewsTab() {
 
   useEffect(() => {
     fetchTeams();
+    fetchNews();
   }, []);
 
   // Close suggestions when clicking outside
@@ -126,27 +65,54 @@ export function NewsTab() {
     }
   };
 
+  const fetchNews = async (teamQuery?: string) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('fetch-news', {
+        body: { teamQuery },
+      });
+
+      if (error) throw error;
+      setNews(data?.articles || []);
+    } catch (error) {
+      console.error('Error fetching news:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Filter teams based on search query
-  const filteredTeams = teams.filter(team => 
+  const filteredTeams = teams.filter(team =>
     team.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     team.code.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const filteredNews = selectedTeam
-    ? mockNews.filter(article => 
-        article.teams.includes(selectedTeam) || article.teams.length === 0
+    ? news.filter(article => 
+        article.teams?.includes(selectedTeam) || (article.teams?.length === 0)
       )
-    : mockNews;
+    : news;
 
   const clearFilter = () => {
     setSelectedTeam(null);
     setSearchQuery('');
+    fetchNews();
   };
 
   const selectTeam = (team: Team) => {
     setSelectedTeam(team.code);
     setSearchQuery(team.name);
     setShowSuggestions(false);
+  };
+
+  const handleRefresh = () => {
+    fetchNews(selectedTeam || undefined);
+  };
+
+  const openArticle = (url?: string) => {
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
   };
 
   return (
@@ -156,17 +122,28 @@ export function NewsTab() {
           <Newspaper className="w-5 h-5 text-primary" />
           <h2 className="text-lg font-bold">Latest News</h2>
         </div>
-        {selectedTeam && (
+        <div className="flex items-center gap-1">
           <Button
             variant="ghost"
-            size="sm"
-            onClick={clearFilter}
-            className="h-7 px-2 text-xs gap-1"
+            size="icon"
+            onClick={handleRefresh}
+            disabled={loading}
+            className="h-8 w-8"
           >
-            <X className="w-3 h-3" />
-            Clear
+            <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
           </Button>
-        )}
+          {selectedTeam && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearFilter}
+              className="h-7 px-2 text-xs gap-1"
+            >
+              <X className="w-3 h-3" />
+              Clear
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Team Search with Autocomplete */}
@@ -271,7 +248,12 @@ export function NewsTab() {
 
       {/* News List */}
       <div className="space-y-3">
-        {filteredNews.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-12">
+            <Loader2 className="w-8 h-8 text-primary mx-auto mb-3 animate-spin" />
+            <p className="text-muted-foreground text-sm">Loading news...</p>
+          </div>
+        ) : filteredNews.length === 0 ? (
           <div className="text-center py-12">
             <Newspaper className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50" />
             <p className="text-muted-foreground text-sm">No news found for this team</p>
@@ -280,6 +262,7 @@ export function NewsTab() {
           filteredNews.map((article) => (
             <Card 
               key={article.id} 
+              onClick={() => openArticle(article.url)}
               className="overflow-hidden hover:border-primary/50 transition-colors cursor-pointer"
             >
               <div className="flex">
@@ -288,6 +271,9 @@ export function NewsTab() {
                     src={article.imageUrl} 
                     alt={article.title}
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=400&h=200&fit=crop';
+                    }}
                   />
                 </div>
                 <CardContent className="p-3 flex-1 flex flex-col justify-between">
@@ -305,7 +291,7 @@ export function NewsTab() {
                         <ExternalLink className="w-3 h-3" />
                         {article.source}
                       </span>
-                      {article.teams.length > 0 && (
+                      {article.teams && article.teams.length > 0 && (
                         <div className="flex gap-1">
                           {article.teams.map(code => {
                             const team = teams.find(t => t.code === code);
@@ -332,10 +318,6 @@ export function NewsTab() {
           ))
         )}
       </div>
-
-      <p className="text-xs text-center text-muted-foreground pt-4">
-        News updates coming soon with live API integration
-      </p>
     </div>
   );
 }
