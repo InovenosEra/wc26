@@ -25,21 +25,36 @@ serve(async (req) => {
 
     console.log(`Generating fact for: ${homeTeam} vs ${awayTeam} at ${stadium}, ${city}`);
 
-    const prompt = `Generate ONE fascinating, specific football fact about the matchup between ${homeTeam} and ${awayTeam}.
+    // Use a random seed to ensure variety
+    const randomSeed = Math.floor(Math.random() * 100);
+    
+    const prompt = `Generate ONE fascinating, specific football fact. Random seed: ${randomSeed}.
 
-Choose ONE of these categories and make it SPECIFIC to these two teams:
-1. Head-to-head World Cup history (if they've met before in a World Cup)
-2. A notable player from either team and their World Cup achievements
-3. An interesting statistic comparing these two national teams
-4. Historical context about either team's World Cup journey
-5. A record held by either team in World Cup competitions
+RANDOMLY select ONE category from this list (use the random seed to vary your choice):
+1. HEAD-TO-HEAD HISTORY: A memorable past encounter between ${homeTeam} and ${awayTeam} in any competition
+2. TEAM LEGEND: A legendary player from ${homeTeam} or ${awayTeam} and their iconic moment
+3. WORLD CUP GLORY: ${homeTeam}'s or ${awayTeam}'s greatest World Cup achievement or heartbreak
+4. TACTICAL IDENTITY: The distinctive playing style or formation ${homeTeam} or ${awayTeam} is known for
+5. MANAGER STORY: An interesting fact about either team's current or legendary manager
+6. STADIUM/VENUE: ${stadium ? `An interesting fact about ${stadium} in ${city}` : 'A memorable World Cup venue moment involving either team'}
+7. NATIONAL PRIDE: A cultural or historical connection between football and ${homeTeam} or ${awayTeam}
+8. RECORD BREAKER: A unique record held by ${homeTeam}, ${awayTeam}, or one of their players
+9. UNDERDOG STORY: A surprising upset or underdog victory involving either team
+10. RIVALRY: Any notable rivalry or intense match involving ${homeTeam} or ${awayTeam}
+11. YOUNG TALENT: An emerging star or promising young player from either squad
+12. GOALSCORING: A memorable goal or top scorer fact from either national team
+13. DEFENSIVE PROWESS: A clean sheet record or legendary defender from either team
+14. WORLD CUP DEBUT: When ${homeTeam} or ${awayTeam} first appeared in a World Cup
+15. QUALIFICATION: An interesting story from either team's World Cup qualification journey
 
 Requirements:
-- The fact MUST be specifically about ${homeTeam} or ${awayTeam} - not generic football facts
-- Maximum 2 sentences
-- Be factually accurate based on real football/World Cup history
-- Make it engaging and something fans would find interesting
+- Pick a DIFFERENT category each time - be unpredictable!
+- The fact MUST be specifically about ${homeTeam} or ${awayTeam}
+- Maximum 2 sentences, make it punchy and memorable
+- Be factually accurate based on real football history
+- Make it engaging - surprise the reader with something they might not know
 - Do NOT use generic phrases like "this will be an exciting match"
+- Focus on ONE specific detail, not broad summaries
 
 ${stadium ? `Venue: ${stadium}, ${city}` : ''}
 ${stage ? `Tournament stage: ${stage}` : ''}
