@@ -94,6 +94,12 @@ serve(async (req) => {
         params.append('include', 'country');
         break;
 
+      case 'rankings':
+        // Get FIFA rankings
+        endpoint = '/rankings/fifa';
+        params.append('per_page', '100');
+        break;
+
       case 'fixture':
         // Get specific fixture details
         const fixtureId = url.searchParams.get('fixtureId');
@@ -154,7 +160,7 @@ serve(async (req) => {
 
       default:
         return new Response(
-          JSON.stringify({ error: 'Invalid action. Use: fixtures, qualifiers, qualification-seasons, live, standings, topscorers, topassists, teams, fixture, statistics, leagues, player, playersearch' }),
+          JSON.stringify({ error: 'Invalid action. Use: fixtures, qualifiers, qualification-seasons, live, standings, topscorers, topassists, teams, fixture, statistics, leagues, player, playersearch, rankings' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
     }
