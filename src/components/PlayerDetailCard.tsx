@@ -130,12 +130,12 @@ export function PlayerDetailCard({ player, onClose }: PlayerDetailCardProps) {
         </div>
 
         {/* Key Stats Row */}
-        <div className="flex justify-around py-4 px-2 -mt-6 mx-4 bg-card rounded-xl border border-border shadow-lg">
+        <div className="flex justify-around py-4 px-2 mt-4 mx-4 bg-card rounded-xl border border-border shadow-lg">
           <StatBox icon={<Trophy className="w-4 h-4 text-primary" />} value={displayData.goals} label="Goals" />
           <div className="w-px bg-border" />
           <StatBox icon={<Target className="w-4 h-4 text-accent" />} value={displayData.assists} label="Assists" />
           <div className="w-px bg-border" />
-          <StatBox icon={<TrendingUp className="w-4 h-4 text-blue-400" />} value={displayData.xG.toFixed(1)} label="xG" />
+          <StatBox icon={<TrendingUp className="w-4 h-4 text-muted-foreground" />} value={displayData.xG.toFixed(1)} label="xG" />
         </div>
 
         {/* Physical Stats (if available from API) */}
