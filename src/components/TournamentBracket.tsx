@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { Trophy, Flag } from 'lucide-react';
+import { Trophy, Flag, Calendar, MapPin } from 'lucide-react';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 interface BracketMatch {
@@ -12,9 +12,181 @@ interface BracketMatch {
   awayScore?: number | null;
   status: 'scheduled' | 'live' | 'completed' | 'tbd';
   date?: string;
+  venue?: string;
 }
 
-// Simplified bracket for tree view (QF onwards)
+interface PlayoffPath {
+  name: string;
+  semifinal1: BracketMatch;
+  semifinal2?: BracketMatch;
+  final: BracketMatch;
+}
+
+// UEFA European Playoffs - 4 paths, 4 qualifiers
+const uefaPlayoffs: PlayoffPath[] = [
+  {
+    name: 'Path A',
+    semifinal1: { 
+      id: 'UEFA-A-SF1', 
+      homeTeam: 'Wales', 
+      awayTeam: 'Bosnia-Herzegovina', 
+      homeFlag: 'https://flagcdn.com/w80/gb-wls.png',
+      awayFlag: 'https://flagcdn.com/w80/ba.png',
+      status: 'scheduled', 
+      date: 'Mar 26, 2026' 
+    },
+    semifinal2: { 
+      id: 'UEFA-A-SF2', 
+      homeTeam: 'Italy', 
+      awayTeam: 'Northern Ireland', 
+      homeFlag: 'https://flagcdn.com/w80/it.png',
+      awayFlag: 'https://flagcdn.com/w80/gb-nir.png',
+      status: 'scheduled', 
+      date: 'Mar 26, 2026' 
+    },
+    final: { 
+      id: 'UEFA-A-F', 
+      homeTeam: 'Winner SF1', 
+      awayTeam: 'Winner SF2', 
+      status: 'tbd', 
+      date: 'Mar 31, 2026' 
+    },
+  },
+  {
+    name: 'Path B',
+    semifinal1: { 
+      id: 'UEFA-B-SF1', 
+      homeTeam: 'Ukraine', 
+      awayTeam: 'Sweden', 
+      homeFlag: 'https://flagcdn.com/w80/ua.png',
+      awayFlag: 'https://flagcdn.com/w80/se.png',
+      status: 'scheduled', 
+      date: 'Mar 26, 2026' 
+    },
+    semifinal2: { 
+      id: 'UEFA-B-SF2', 
+      homeTeam: 'Poland', 
+      awayTeam: 'Albania', 
+      homeFlag: 'https://flagcdn.com/w80/pl.png',
+      awayFlag: 'https://flagcdn.com/w80/al.png',
+      status: 'scheduled', 
+      date: 'Mar 26, 2026' 
+    },
+    final: { 
+      id: 'UEFA-B-F', 
+      homeTeam: 'Winner SF1', 
+      awayTeam: 'Winner SF2', 
+      status: 'tbd', 
+      date: 'Mar 31, 2026' 
+    },
+  },
+  {
+    name: 'Path C',
+    semifinal1: { 
+      id: 'UEFA-C-SF1', 
+      homeTeam: 'Slovakia', 
+      awayTeam: 'Kosovo', 
+      homeFlag: 'https://flagcdn.com/w80/sk.png',
+      awayFlag: 'https://flagcdn.com/w80/xk.png',
+      status: 'scheduled', 
+      date: 'Mar 26, 2026' 
+    },
+    semifinal2: { 
+      id: 'UEFA-C-SF2', 
+      homeTeam: 'Turkey', 
+      awayTeam: 'Romania', 
+      homeFlag: 'https://flagcdn.com/w80/tr.png',
+      awayFlag: 'https://flagcdn.com/w80/ro.png',
+      status: 'scheduled', 
+      date: 'Mar 26, 2026' 
+    },
+    final: { 
+      id: 'UEFA-C-F', 
+      homeTeam: 'Winner SF1', 
+      awayTeam: 'Winner SF2', 
+      status: 'tbd', 
+      date: 'Mar 31, 2026' 
+    },
+  },
+  {
+    name: 'Path D',
+    semifinal1: { 
+      id: 'UEFA-D-SF1', 
+      homeTeam: 'Czechia', 
+      awayTeam: 'Ireland', 
+      homeFlag: 'https://flagcdn.com/w80/cz.png',
+      awayFlag: 'https://flagcdn.com/w80/ie.png',
+      status: 'scheduled', 
+      date: 'Mar 26, 2026' 
+    },
+    semifinal2: { 
+      id: 'UEFA-D-SF2', 
+      homeTeam: 'Denmark', 
+      awayTeam: 'North Macedonia', 
+      homeFlag: 'https://flagcdn.com/w80/dk.png',
+      awayFlag: 'https://flagcdn.com/w80/mk.png',
+      status: 'scheduled', 
+      date: 'Mar 26, 2026' 
+    },
+    final: { 
+      id: 'UEFA-D-F', 
+      homeTeam: 'Winner SF1', 
+      awayTeam: 'Winner SF2', 
+      status: 'tbd', 
+      date: 'Mar 31, 2026' 
+    },
+  },
+];
+
+// Intercontinental Playoffs - 2 paths, 2 qualifiers
+const intercontinentalPlayoffs: PlayoffPath[] = [
+  {
+    name: 'Pathway 1',
+    semifinal1: { 
+      id: 'IC-1-SF', 
+      homeTeam: 'New Caledonia', 
+      awayTeam: 'Jamaica', 
+      homeFlag: 'https://flagcdn.com/w80/nc.png',
+      awayFlag: 'https://flagcdn.com/w80/jm.png',
+      status: 'scheduled', 
+      date: 'Mar 26, 2026',
+      venue: 'Monterrey, Mexico'
+    },
+    final: { 
+      id: 'IC-1-F', 
+      homeTeam: 'DR Congo', 
+      awayTeam: 'Winner SF', 
+      homeFlag: 'https://flagcdn.com/w80/cd.png',
+      status: 'tbd', 
+      date: 'Mar 31, 2026',
+      venue: 'Guadalajara, Mexico'
+    },
+  },
+  {
+    name: 'Pathway 2',
+    semifinal1: { 
+      id: 'IC-2-SF', 
+      homeTeam: 'Bolivia', 
+      awayTeam: 'Suriname', 
+      homeFlag: 'https://flagcdn.com/w80/bo.png',
+      awayFlag: 'https://flagcdn.com/w80/sr.png',
+      status: 'scheduled', 
+      date: 'Mar 26, 2026',
+      venue: 'Monterrey, Mexico'
+    },
+    final: { 
+      id: 'IC-2-F', 
+      homeTeam: 'Iraq', 
+      awayTeam: 'Winner SF', 
+      homeFlag: 'https://flagcdn.com/w80/iq.png',
+      status: 'tbd', 
+      date: 'Mar 31, 2026',
+      venue: 'Guadalajara, Mexico'
+    },
+  },
+];
+
+// Simplified bracket for knockout tree view (QF onwards)
 const treeBracket = {
   quarterFinals: [
     { id: 'QF-1', homeTeam: 'TBD', awayTeam: 'TBD', status: 'tbd' as const },
@@ -61,14 +233,6 @@ const earlierRounds = {
     { id: 'R16-8', homeTeam: 'W15', awayTeam: 'W16', status: 'tbd' as const },
   ],
 };
-
-// Qualification remaining matches
-const qualificationBracket = [
-  { id: 'PO-1', homeTeam: 'AFC 5th', awayTeam: 'CONCACAF 4th', status: 'tbd' as const, date: 'Mar 2026' },
-  { id: 'PO-2', homeTeam: 'CONMEBOL 6th', awayTeam: 'OFC 1st', status: 'tbd' as const, date: 'Mar 2026' },
-  { id: 'PO-3', homeTeam: 'CAF 5th', awayTeam: 'AFC Play-off', status: 'tbd' as const, date: 'Mar 2026' },
-  { id: 'PO-4', homeTeam: 'UEFA Play-off', awayTeam: 'CONCACAF Play-off', status: 'tbd' as const, date: 'Mar 2026' },
-];
 
 // Compact match card for tree view
 function TreeMatchCard({ match, size = 'normal' }: { match: BracketMatch; size?: 'small' | 'normal' | 'large' }) {
@@ -122,41 +286,108 @@ function TreeMatchCard({ match, size = 'normal' }: { match: BracketMatch; size?:
   );
 }
 
-// Connector line component
-function Connector({ direction, height = 40 }: { direction: 'left' | 'right' | 'horizontal'; height?: number }) {
-  if (direction === 'horizontal') {
-    return (
-      <div className="flex items-center">
-        <div className="w-3 h-[2px] bg-primary/40" />
-      </div>
-    );
-  }
+// Match card for qualifiers (larger, more detailed)
+function QualifierMatchCard({ match }: { match: BracketMatch }) {
+  const isTbd = match.status === 'tbd';
   
   return (
-    <svg 
-      width="24" 
-      height={height} 
-      className="flex-shrink-0"
-      style={{ minHeight: height }}
-    >
-      {direction === 'right' ? (
-        <path 
-          d={`M0,${height/2} L12,${height/2} L12,${height} L24,${height}`}
-          fill="none" 
-          stroke="hsl(var(--primary))" 
-          strokeWidth="2"
-          strokeOpacity="0.4"
-        />
-      ) : (
-        <path 
-          d={`M24,${height/2} L12,${height/2} L12,0 L0,0`}
-          fill="none" 
-          stroke="hsl(var(--primary))" 
-          strokeWidth="2"
-          strokeOpacity="0.4"
-        />
+    <div className={cn(
+      "glass-card rounded-lg border border-border/50 overflow-hidden",
+      match.status === 'live' && "border-accent ring-1 ring-accent/50",
+      match.status === 'scheduled' && "border-primary/30"
+    )}>
+      {(match.date || match.venue) && (
+        <div className="px-2 py-1 bg-secondary/30 border-b border-border/30 flex items-center justify-between">
+          {match.date && (
+            <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
+              <Calendar className="w-3 h-3" />
+              {match.date}
+            </div>
+          )}
+          {match.venue && (
+            <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
+              <MapPin className="w-3 h-3" />
+              {match.venue}
+            </div>
+          )}
+        </div>
       )}
-    </svg>
+      <div className="p-2 space-y-1.5">
+        <div className={cn(
+          "flex items-center justify-between gap-2",
+          isTbd ? "text-muted-foreground" : "text-foreground"
+        )}>
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            {match.homeFlag ? (
+              <img src={match.homeFlag} alt="" className="w-5 h-3.5 object-cover rounded-sm shadow-sm" />
+            ) : (
+              <div className="w-5 h-3.5 bg-muted rounded-sm" />
+            )}
+            <span className="truncate text-xs font-medium">{match.homeTeam}</span>
+          </div>
+          {match.homeScore !== null && match.homeScore !== undefined && (
+            <span className="font-bold text-sm">{match.homeScore}</span>
+          )}
+        </div>
+        <div className={cn(
+          "flex items-center justify-between gap-2",
+          isTbd ? "text-muted-foreground" : "text-foreground"
+        )}>
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            {match.awayFlag ? (
+              <img src={match.awayFlag} alt="" className="w-5 h-3.5 object-cover rounded-sm shadow-sm" />
+            ) : (
+              <div className="w-5 h-3.5 bg-muted rounded-sm" />
+            )}
+            <span className="truncate text-xs font-medium">{match.awayTeam}</span>
+          </div>
+          {match.awayScore !== null && match.awayScore !== undefined && (
+            <span className="font-bold text-sm">{match.awayScore}</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Playoff path component with bracket lines
+function PlayoffPathBracket({ path }: { path: PlayoffPath }) {
+  return (
+    <div className="glass-card rounded-xl overflow-hidden animate-slide-up">
+      <div className="px-3 py-2 bg-secondary/30 border-b border-border">
+        <h4 className="text-xs font-semibold">{path.name}</h4>
+      </div>
+      <div className="p-3">
+        <div className="flex items-center gap-2">
+          {/* Semi-finals column */}
+          <div className="flex flex-col gap-2 flex-1">
+            <div className="text-[8px] text-muted-foreground text-center mb-1">Semi-final</div>
+            <QualifierMatchCard match={path.semifinal1} />
+            {path.semifinal2 && <QualifierMatchCard match={path.semifinal2} />}
+          </div>
+          
+          {/* Connector */}
+          <div className="flex flex-col items-center justify-center">
+            <svg width="20" height={path.semifinal2 ? "80" : "40"} className="text-primary/40">
+              {path.semifinal2 ? (
+                <>
+                  <path d="M0,20 L10,20 L10,40 L20,40" fill="none" stroke="currentColor" strokeWidth="2" />
+                  <path d="M0,60 L10,60 L10,40 L20,40" fill="none" stroke="currentColor" strokeWidth="2" />
+                </>
+              ) : (
+                <path d="M0,20 L20,20" fill="none" stroke="currentColor" strokeWidth="2" />
+              )}
+            </svg>
+          </div>
+          
+          {/* Final column */}
+          <div className="flex flex-col gap-2 flex-1">
+            <div className="text-[8px] text-muted-foreground text-center mb-1">Final</div>
+            <QualifierMatchCard match={path.final} />
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -336,52 +567,59 @@ export function KnockoutBracket() {
 export function QualificationBracket() {
   return (
     <div className="space-y-4">
+      {/* Header */}
       <div className="glass-card rounded-xl overflow-hidden animate-slide-up">
         <div className="px-4 py-3 bg-secondary/50 border-b border-border flex items-center gap-2">
           <Flag className="w-4 h-4 text-primary" />
           <h3 className="text-sm font-bold text-primary">Remaining Qualification</h3>
         </div>
-        <div className="p-3 bg-muted/30 text-center">
-          <p className="text-xs text-muted-foreground">
-            Inter-confederation playoffs to determine final spots
+        <div className="p-3 space-y-2">
+          <div className="flex justify-between text-xs">
+            <span className="text-muted-foreground">Qualified Teams</span>
+            <span className="font-bold text-accent">42 / 48</span>
+          </div>
+          <div className="w-full bg-muted rounded-full h-2">
+            <div className="bg-accent h-2 rounded-full transition-all" style={{ width: '87.5%' }} />
+          </div>
+          <div className="text-[10px] text-muted-foreground text-center">
+            6 spots remaining via playoffs (4 UEFA + 2 Intercontinental)
+          </div>
+        </div>
+      </div>
+
+      {/* UEFA European Playoffs */}
+      <div className="glass-card rounded-xl overflow-hidden animate-slide-up">
+        <div className="px-4 py-3 bg-secondary/50 border-b border-border">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold">UEFA European Playoffs</h3>
+            <span className="text-xs text-primary font-medium">4 qualifiers</span>
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-1">
+            16 teams competing for 4 World Cup spots
           </p>
         </div>
       </div>
 
-      <div className="glass-card rounded-xl overflow-hidden animate-slide-up">
-        <div className="px-4 py-2 bg-secondary/30 border-b border-border">
-          <h4 className="text-xs font-semibold">Inter-confederation Playoffs</h4>
-        </div>
-        <div className="p-3">
-          <div className="grid grid-cols-2 gap-2">
-            {qualificationBracket.map((match) => (
-              <div key={match.id} className="flex flex-col items-center">
-                <div className="text-[8px] text-muted-foreground mb-1">{match.date}</div>
-                <TreeMatchCard match={match} size="normal" />
-              </div>
-            ))}
+      {uefaPlayoffs.map((path) => (
+        <PlayoffPathBracket key={path.name} path={path} />
+      ))}
+
+      {/* Intercontinental Playoffs */}
+      <div className="glass-card rounded-xl overflow-hidden animate-slide-up mt-6">
+        <div className="px-4 py-3 bg-secondary/50 border-b border-border">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold">Intercontinental Playoffs</h3>
+            <span className="text-xs text-primary font-medium">2 qualifiers</span>
           </div>
+          <p className="text-[10px] text-muted-foreground mt-1">
+            Hosted in Mexico (Monterrey & Guadalajara)
+          </p>
         </div>
       </div>
 
-      {/* Qualified Teams Summary */}
-      <div className="glass-card rounded-xl overflow-hidden animate-slide-up">
-        <div className="px-4 py-2 bg-secondary/30 border-b border-border">
-          <h4 className="text-xs font-semibold">Qualification Status</h4>
-        </div>
-        <div className="p-3 space-y-2">
-          <div className="flex justify-between text-xs">
-            <span className="text-muted-foreground">Qualified Teams</span>
-            <span className="font-bold text-accent">44 / 48</span>
-          </div>
-          <div className="w-full bg-muted rounded-full h-2">
-            <div className="bg-accent h-2 rounded-full transition-all" style={{ width: '91.6%' }} />
-          </div>
-          <div className="text-[10px] text-muted-foreground text-center mt-2">
-            4 spots remaining via playoffs
-          </div>
-        </div>
-      </div>
+      {intercontinentalPlayoffs.map((path) => (
+        <PlayoffPathBracket key={path.name} path={path} />
+      ))}
     </div>
   );
 }
