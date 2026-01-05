@@ -96,6 +96,7 @@ export interface FormattedFixture {
 export interface FormattedStanding {
   rank: number;
   teamName: string;
+  teamCode: string;
   teamLogo: string;
   played: number;
   won: number;
@@ -202,6 +203,7 @@ export async function fetchStandings(): Promise<Record<string, FormattedStanding
       groupedStandings[groupName].push({
         rank: standing.position,
         teamName: standing.participant?.name || 'Unknown',
+        teamCode: standing.participant?.short_code || standing.participant?.name?.substring(0, 3).toUpperCase() || 'UNK',
         teamLogo: standing.participant?.image_path || '',
         played: getDetailValue(129),
         won: getDetailValue(130),
