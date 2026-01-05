@@ -141,7 +141,7 @@ export function StatsTab() {
               : "text-muted-foreground"
           )}
         >
-          ⚽ Top Scorers
+          👤 Personal Stats
         </Button>
       </div>
 
@@ -228,7 +228,7 @@ function ApiGroupStandings({ standings }: { standings: Record<string, FormattedS
   );
 }
 
-// Top scorers section
+// Personal statistics section with goals, xG, and assists
 function TopScorersSection({ scorers, apiConnected }: { scorers: FormattedTopScorer[]; apiConnected: boolean }) {
   // Mock data for when API is not connected
   const mockScorers = [
@@ -239,60 +239,167 @@ function TopScorersSection({ scorers, apiConnected }: { scorers: FormattedTopSco
     { playerName: 'Vinícius Jr.', teamName: 'Brazil', teamLogo: 'https://flagcdn.com/w80/br.png', playerPhoto: '', goals: 0 },
   ];
 
+  const mockXgLeaders = [
+    { playerName: 'Erling Haaland', teamName: 'Norway', teamLogo: 'https://flagcdn.com/w80/no.png', playerPhoto: '', value: 0 },
+    { playerName: 'Kylian Mbappé', teamName: 'France', teamLogo: 'https://flagcdn.com/w80/fr.png', playerPhoto: '', value: 0 },
+    { playerName: 'Harry Kane', teamName: 'England', teamLogo: 'https://flagcdn.com/w80/gb-eng.png', playerPhoto: '', value: 0 },
+    { playerName: 'Lautaro Martínez', teamName: 'Argentina', teamLogo: 'https://flagcdn.com/w80/ar.png', playerPhoto: '', value: 0 },
+    { playerName: 'Vinícius Jr.', teamName: 'Brazil', teamLogo: 'https://flagcdn.com/w80/br.png', playerPhoto: '', value: 0 },
+  ];
+
+  const mockAssists = [
+    { playerName: 'Kevin De Bruyne', teamName: 'Belgium', teamLogo: 'https://flagcdn.com/w80/be.png', playerPhoto: '', value: 0 },
+    { playerName: 'Lionel Messi', teamName: 'Argentina', teamLogo: 'https://flagcdn.com/w80/ar.png', playerPhoto: '', value: 0 },
+    { playerName: 'Bruno Fernandes', teamName: 'Portugal', teamLogo: 'https://flagcdn.com/w80/pt.png', playerPhoto: '', value: 0 },
+    { playerName: 'Florian Wirtz', teamName: 'Germany', teamLogo: 'https://flagcdn.com/w80/de.png', playerPhoto: '', value: 0 },
+    { playerName: 'Bukayo Saka', teamName: 'England', teamLogo: 'https://flagcdn.com/w80/gb-eng.png', playerPhoto: '', value: 0 },
+  ];
+
   const displayScorers = scorers.length > 0 ? scorers : mockScorers;
 
   return (
-    <div className="glass-card rounded-xl overflow-hidden animate-slide-up">
-      <div className="px-4 py-3 bg-secondary/50 border-b border-border">
-        <h3 className="text-sm font-bold text-primary">Top Scorers</h3>
-      </div>
-      
-      <div className="divide-y divide-border">
-        {displayScorers.map((scorer, index) => (
-          <div key={index} className="flex items-center gap-3 p-3">
-            <span className={cn(
-              "w-6 text-center text-sm font-bold",
-              index === 0 && "text-primary",
-              index === 1 && "text-gray-400",
-              index === 2 && "text-amber-600"
-            )}>
-              {index + 1}
-            </span>
-            
-            {scorer.playerPhoto ? (
-              <img 
-                src={scorer.playerPhoto} 
-                alt={scorer.playerName}
-                className="w-8 h-8 rounded-full object-cover"
-              />
-            ) : (
-              <img 
-                src={scorer.teamLogo} 
-                alt={scorer.teamName}
-                className="w-6 h-4 object-cover rounded shadow-sm"
-              />
-            )}
-            
-            <div className="flex-1">
-              <p className="text-sm font-medium">{scorer.playerName}</p>
-              <p className="text-[10px] text-muted-foreground">{scorer.teamName}</p>
-            </div>
-            
-            <div className="text-right">
-              <p className="text-lg font-bold text-primary">{scorer.goals}</p>
-              <p className="text-[10px] text-muted-foreground">goals</p>
-            </div>
-          </div>
-        ))}
-      </div>
-      
-      {!apiConnected && (
-        <div className="p-3 bg-muted/30 text-center">
-          <p className="text-xs text-muted-foreground">
-            Stats will update when tournament begins
-          </p>
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="glass-card rounded-xl overflow-hidden animate-slide-up">
+        <div className="px-4 py-3 bg-secondary/50 border-b border-border">
+          <h3 className="text-sm font-bold text-primary">Personal Statistics</h3>
         </div>
+        
+        {!apiConnected && (
+          <div className="p-3 bg-muted/30 text-center">
+            <p className="text-xs text-muted-foreground">
+              Stats will update when tournament begins
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Top Scorers */}
+      <div className="glass-card rounded-xl overflow-hidden animate-slide-up">
+        <div className="px-4 py-2 bg-secondary/30 border-b border-border flex items-center gap-2">
+          <span>⚽</span>
+          <h4 className="text-xs font-semibold">Top Scorers</h4>
+        </div>
+        <div className="divide-y divide-border">
+          {displayScorers.slice(0, 5).map((scorer, index) => (
+            <PlayerStatRow 
+              key={index}
+              rank={index + 1}
+              playerName={scorer.playerName}
+              teamName={scorer.teamName}
+              teamLogo={scorer.teamLogo}
+              playerPhoto={scorer.playerPhoto}
+              value={scorer.goals}
+              label="goals"
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Expected Goals (xG) */}
+      <div className="glass-card rounded-xl overflow-hidden animate-slide-up">
+        <div className="px-4 py-2 bg-secondary/30 border-b border-border flex items-center gap-2">
+          <span>📊</span>
+          <h4 className="text-xs font-semibold">Expected Goals (xG)</h4>
+        </div>
+        <div className="divide-y divide-border">
+          {mockXgLeaders.map((player, index) => (
+            <PlayerStatRow 
+              key={index}
+              rank={index + 1}
+              playerName={player.playerName}
+              teamName={player.teamName}
+              teamLogo={player.teamLogo}
+              playerPhoto={player.playerPhoto}
+              value={player.value}
+              label="xG"
+              decimals
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Top Assists */}
+      <div className="glass-card rounded-xl overflow-hidden animate-slide-up">
+        <div className="px-4 py-2 bg-secondary/30 border-b border-border flex items-center gap-2">
+          <span>🎯</span>
+          <h4 className="text-xs font-semibold">Top Assists</h4>
+        </div>
+        <div className="divide-y divide-border">
+          {mockAssists.map((player, index) => (
+            <PlayerStatRow 
+              key={index}
+              rank={index + 1}
+              playerName={player.playerName}
+              teamName={player.teamName}
+              teamLogo={player.teamLogo}
+              playerPhoto={player.playerPhoto}
+              value={player.value}
+              label="assists"
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Reusable player stat row component
+function PlayerStatRow({ 
+  rank, 
+  playerName, 
+  teamName, 
+  teamLogo, 
+  playerPhoto, 
+  value, 
+  label,
+  decimals = false
+}: { 
+  rank: number;
+  playerName: string;
+  teamName: string;
+  teamLogo: string;
+  playerPhoto?: string;
+  value: number;
+  label: string;
+  decimals?: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-3 p-3">
+      <span className={cn(
+        "w-5 text-center text-sm font-bold",
+        rank === 1 && "text-primary",
+        rank === 2 && "text-gray-400",
+        rank === 3 && "text-amber-600"
+      )}>
+        {rank}
+      </span>
+      
+      {playerPhoto ? (
+        <img 
+          src={playerPhoto} 
+          alt={playerName}
+          className="w-8 h-8 rounded-full object-cover"
+        />
+      ) : (
+        <img 
+          src={teamLogo} 
+          alt={teamName}
+          className="w-6 h-4 object-cover rounded shadow-sm"
+        />
       )}
+      
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium truncate">{playerName}</p>
+        <p className="text-[10px] text-muted-foreground">{teamName}</p>
+      </div>
+      
+      <div className="text-right">
+        <p className="text-lg font-bold text-primary">
+          {decimals ? value.toFixed(1) : value}
+        </p>
+        <p className="text-[10px] text-muted-foreground">{label}</p>
+      </div>
     </div>
   );
 }
