@@ -62,6 +62,13 @@ serve(async (req) => {
         params.append('per_page', '20');
         break;
 
+      case 'topassists':
+        // Get top assists
+        endpoint = `/topassists/seasons/${WORLD_CUP_SEASON_ID}`;
+        params.append('include', 'player;participant');
+        params.append('per_page', '20');
+        break;
+
       case 'teams':
         // Get teams in league
         endpoint = `/teams/seasons/${WORLD_CUP_SEASON_ID}`;

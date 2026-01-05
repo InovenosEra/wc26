@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   fetchStandings, 
-  fetchTopScorers, 
+  fetchTopScorers,
+  fetchTopAssists,
   checkApiConnection,
   FormattedStanding,
-  FormattedTopScorer 
+  FormattedTopScorer,
+  FormattedAssist
 } from '@/services/footballApi';
 import { Team } from '@/types';
 import { GroupStandings } from '@/components/GroupStandings';
@@ -19,6 +21,7 @@ export function StatsTab() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [apiStandings, setApiStandings] = useState<Record<string, FormattedStanding[]>>({});
   const [topScorers, setTopScorers] = useState<FormattedTopScorer[]>([]);
+  const [topAssists, setTopAssists] = useState<FormattedAssist[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<ViewType>('standings');
   const [apiConnected, setApiConnected] = useState<boolean | null>(null);
@@ -52,12 +55,14 @@ export function StatsTab() {
     // If API is connected, fetch live data
     if (connected) {
       try {
-        const [standings, scorers] = await Promise.all([
+        const [standings, scorers, assists] = await Promise.all([
           fetchStandings(),
-          fetchTopScorers()
+          fetchTopScorers(),
+          fetchTopAssists()
         ]);
         setApiStandings(standings);
         setTopScorers(scorers);
+        setTopAssists(assists);
       } catch (error) {
         console.error('Error fetching API data:', error);
       }
@@ -153,7 +158,7 @@ export function StatsTab() {
           <GroupStandings teams={teams} />
         )
       ) : (
-        <TopScorersSection scorers={topScorers} apiConnected={apiConnected || false} />
+        <TopScorersSection scorers={topScorers} assists={topAssists} apiConnected={apiConnected || false} />
       )}
     </div>
   );
@@ -229,7 +234,15 @@ function ApiGroupStandings({ standings }: { standings: Record<string, FormattedS
 }
 
 // Personal statistics section with goals, xG, and assists
-function TopScorersSection({ scorers, apiConnected }: { scorers: FormattedTopScorer[]; apiConnected: boolean }) {
+function TopScorersSection({ 
+  scorers, 
+  assists,
+  apiConnected 
+}: { 
+  scorers: FormattedTopScorer[]; 
+  assists: FormattedAssist[];
+  apiConnected: boolean 
+}) {
   // Mock data for when API is not connected
   const mockScorers = [
     { playerName: 'Kylian Mbappé', teamName: 'France', teamLogo: 'https://flagcdn.com/w80/fr.png', playerPhoto: '', goals: 0 },
@@ -248,14 +261,15 @@ function TopScorersSection({ scorers, apiConnected }: { scorers: FormattedTopSco
   ];
 
   const mockAssists = [
-    { playerName: 'Kevin De Bruyne', teamName: 'Belgium', teamLogo: 'https://flagcdn.com/w80/be.png', playerPhoto: '', value: 0 },
-    { playerName: 'Lionel Messi', teamName: 'Argentina', teamLogo: 'https://flagcdn.com/w80/ar.png', playerPhoto: '', value: 0 },
-    { playerName: 'Bruno Fernandes', teamName: 'Portugal', teamLogo: 'https://flagcdn.com/w80/pt.png', playerPhoto: '', value: 0 },
-    { playerName: 'Florian Wirtz', teamName: 'Germany', teamLogo: 'https://flagcdn.com/w80/de.png', playerPhoto: '', value: 0 },
-    { playerName: 'Bukayo Saka', teamName: 'England', teamLogo: 'https://flagcdn.com/w80/gb-eng.png', playerPhoto: '', value: 0 },
+    { playerName: 'Kevin De Bruyne', teamName: 'Belgium', teamLogo: 'https://flagcdn.com/w80/be.png', playerPhoto: '', assists: 0 },
+    { playerName: 'Lionel Messi', teamName: 'Argentina', teamLogo: 'https://flagcdn.com/w80/ar.png', playerPhoto: '', assists: 0 },
+    { playerName: 'Bruno Fernandes', teamName: 'Portugal', teamLogo: 'https://flagcdn.com/w80/pt.png', playerPhoto: '', assists: 0 },
+    { playerName: 'Florian Wirtz', teamName: 'Germany', teamLogo: 'https://flagcdn.com/w80/de.png', playerPhoto: '', assists: 0 },
+    { playerName: 'Bukayo Saka', teamName: 'England', teamLogo: 'https://flagcdn.com/w80/gb-eng.png', playerPhoto: '', assists: 0 },
   ];
 
   const displayScorers = scorers.length > 0 ? scorers : mockScorers;
+  const displayAssists = assists.length > 0 ? assists : mockAssists;
 
   return (
     <div className="space-y-4">
@@ -326,7 +340,7 @@ function TopScorersSection({ scorers, apiConnected }: { scorers: FormattedTopSco
           <h4 className="text-xs font-semibold">Top Assists</h4>
         </div>
         <div className="divide-y divide-border">
-          {mockAssists.map((player, index) => (
+          {displayAssists.slice(0, 5).map((player, index) => (
             <PlayerStatRow 
               key={index}
               rank={index + 1}
@@ -334,7 +348,7 @@ function TopScorersSection({ scorers, apiConnected }: { scorers: FormattedTopSco
               teamName={player.teamName}
               teamLogo={player.teamLogo}
               playerPhoto={player.playerPhoto}
-              value={player.value}
+              value={player.assists}
               label="assists"
             />
           ))}
