@@ -227,7 +227,6 @@ function ApiGroupStandings({ standings, teams }: { standings: Record<string, For
                           className="w-4 h-4 object-contain shrink-0"
                         />
                         <span className="font-medium truncate">{team.teamName}</span>
-                        <ChevronRight className="w-3 h-3 text-muted-foreground ml-auto shrink-0" />
                       </div>
                     </td>
                     <td className="text-center py-2.5 px-0.5 text-muted-foreground">{team.played}</td>
