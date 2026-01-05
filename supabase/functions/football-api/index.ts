@@ -45,18 +45,13 @@ serve(async (req) => {
         break;
 
       case 'qualifiers':
-        // Get World Cup qualification fixtures (inter-confederation & UEFA playoffs)
-        // UEFA World Cup Qualifiers Season ID and Inter-confederation playoff
-        const qualSeasonId = url.searchParams.get('seasonId');
-        endpoint = '/fixtures';
-        params.append('include', 'participants;venue;state;scores;round;stage');
-        params.append('per_page', '50');
-        if (qualSeasonId) {
-          params.append('filters', `fixtureSeasons:${qualSeasonId}`);
-        } else {
-          // Default: search by date range for March 2026 playoffs
-          params.append('filters', 'fixtureStartingAtFrom:2026-03-20;fixtureStartingAtTo:2026-04-05');
-        }
+        // Get World Cup qualification fixtures
+        // Use fixtures/between endpoint for date range
+        const startDate = '2026-03-20';
+        const endDate = '2026-04-05';
+        endpoint = `/fixtures/between/${startDate}/${endDate}`;
+        params.append('include', 'participants;venue;state;scores;round;stage;league');
+        params.append('per_page', '100');
         break;
 
       case 'qualification-seasons':
