@@ -193,21 +193,17 @@ function ApiGroupStandings({ standings, teams }: { standings: Record<string, For
           <div className="overflow-x-auto">
             <table className="w-full text-xs table-fixed">
               <colgroup>
-                <col className="w-[45%]" />
-                <col className="w-[9%]" />
-                <col className="w-[9%]" />
-                <col className="w-[9%]" />
-                <col className="w-[9%]" />
-                <col className="w-[9%]" />
+                <col className="w-[52%]" />
                 <col className="w-[10%]" />
+                <col className="w-[16%]" />
+                <col className="w-[11%]" />
+                <col className="w-[11%]" />
               </colgroup>
               <thead>
                 <tr className="border-b border-border text-muted-foreground">
                   <th className="text-left py-2 px-3 font-medium">Team</th>
                   <th className="text-center py-2 px-1 font-medium">P</th>
-                  <th className="text-center py-2 px-1 font-medium">W</th>
-                  <th className="text-center py-2 px-1 font-medium">D</th>
-                  <th className="text-center py-2 px-1 font-medium">L</th>
+                  <th className="text-center py-2 px-1 font-medium">F:A</th>
                   <th className="text-center py-2 px-1 font-medium">GD</th>
                   <th className="text-center py-2 px-1 font-medium text-primary">Pts</th>
                 </tr>
@@ -230,14 +226,12 @@ function ApiGroupStandings({ standings, teams }: { standings: Record<string, For
                           alt={team.teamName}
                           className="w-5 h-5 object-contain shrink-0"
                         />
-                        <span className="font-medium truncate">{team.teamCode}</span>
+                        <span className="font-medium truncate">{team.teamName}</span>
                         <ChevronRight className="w-3 h-3 text-muted-foreground ml-auto shrink-0" />
                       </div>
                     </td>
                     <td className="text-center py-2.5 px-1 text-muted-foreground">{team.played}</td>
-                    <td className="text-center py-2.5 px-1 text-muted-foreground">{team.won}</td>
-                    <td className="text-center py-2.5 px-1 text-muted-foreground">{team.drawn}</td>
-                    <td className="text-center py-2.5 px-1 text-muted-foreground">{team.lost}</td>
+                    <td className="text-center py-2.5 px-1 text-muted-foreground">{team.goalsFor}:{team.goalsAgainst}</td>
                     <td className={cn(
                       "text-center py-2.5 px-1",
                       team.goalsDiff > 0 && "text-accent",
