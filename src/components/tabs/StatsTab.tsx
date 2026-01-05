@@ -11,7 +11,8 @@ import {
 } from '@/services/footballApi';
 import { Team } from '@/types';
 import { GroupStandings } from '@/components/GroupStandings';
-import { Loader2, BarChart3, Users, Wifi, WifiOff, RefreshCw } from 'lucide-react';
+import { PlayerDetailCard, PlayerStats } from '@/components/PlayerDetailCard';
+import { Loader2, BarChart3, Users, Wifi, WifiOff, RefreshCw, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -243,6 +244,8 @@ function TopScorersSection({
   assists: FormattedAssist[];
   apiConnected: boolean 
 }) {
+  const [selectedPlayer, setSelectedPlayer] = useState<PlayerStats | null>(null);
+
   // Mock data for when API is not connected
   const mockScorers = [
     { playerName: 'Kylian Mbappé', teamName: 'France', teamLogo: 'https://flagcdn.com/w80/fr.png', playerPhoto: '', goals: 0 },
@@ -271,90 +274,126 @@ function TopScorersSection({
   const displayScorers = scorers.length > 0 ? scorers : mockScorers;
   const displayAssists = assists.length > 0 ? assists : mockAssists;
 
+  const handlePlayerClick = (player: {
+    playerName: string;
+    playerPhoto?: string;
+    teamName: string;
+    teamLogo: string;
+    goals?: number;
+    assists?: number;
+  }) => {
+    setSelectedPlayer({
+      playerName: player.playerName,
+      playerPhoto: player.playerPhoto,
+      teamName: player.teamName,
+      teamLogo: player.teamLogo,
+      goals: player.goals,
+      assists: player.assists,
+    });
+  };
+
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="glass-card rounded-xl overflow-hidden animate-slide-up">
-        <div className="px-4 py-3 bg-secondary/50 border-b border-border">
-          <h3 className="text-sm font-bold text-primary">Personal Statistics</h3>
-        </div>
-        
-        {!apiConnected && (
-          <div className="p-3 bg-muted/30 text-center">
-            <p className="text-xs text-muted-foreground">
-              Stats will update when tournament begins
-            </p>
+    <>
+      <div className="space-y-4">
+        {/* Header */}
+        <div className="glass-card rounded-xl overflow-hidden animate-slide-up">
+          <div className="px-4 py-3 bg-secondary/50 border-b border-border">
+            <h3 className="text-sm font-bold text-primary">Personal Statistics</h3>
           </div>
-        )}
+          
+          {!apiConnected && (
+            <div className="p-3 bg-muted/30 text-center">
+              <p className="text-xs text-muted-foreground">
+                Stats will update when tournament begins
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Top Scorers */}
+        <div className="glass-card rounded-xl overflow-hidden animate-slide-up">
+          <div className="px-4 py-2 bg-secondary/30 border-b border-border flex items-center gap-2">
+            <span>⚽</span>
+            <h4 className="text-xs font-semibold">Top Scorers</h4>
+          </div>
+          <div className="divide-y divide-border">
+            {displayScorers.slice(0, 5).map((scorer, index) => (
+              <PlayerStatRow 
+                key={index}
+                rank={index + 1}
+                playerName={scorer.playerName}
+                teamName={scorer.teamName}
+                teamLogo={scorer.teamLogo}
+                playerPhoto={scorer.playerPhoto}
+                value={scorer.goals}
+                label="goals"
+                onClick={() => handlePlayerClick({ ...scorer, goals: scorer.goals })}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Expected Goals (xG) */}
+        <div className="glass-card rounded-xl overflow-hidden animate-slide-up">
+          <div className="px-4 py-2 bg-secondary/30 border-b border-border flex items-center gap-2">
+            <span>📊</span>
+            <h4 className="text-xs font-semibold">Expected Goals (xG)</h4>
+          </div>
+          <div className="divide-y divide-border">
+            {mockXgLeaders.map((player, index) => (
+              <PlayerStatRow 
+                key={index}
+                rank={index + 1}
+                playerName={player.playerName}
+                teamName={player.teamName}
+                teamLogo={player.teamLogo}
+                playerPhoto={player.playerPhoto}
+                value={player.value}
+                label="xG"
+                decimals
+                onClick={() => handlePlayerClick({ 
+                  playerName: player.playerName,
+                  playerPhoto: player.playerPhoto,
+                  teamName: player.teamName,
+                  teamLogo: player.teamLogo,
+                })}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Top Assists */}
+        <div className="glass-card rounded-xl overflow-hidden animate-slide-up">
+          <div className="px-4 py-2 bg-secondary/30 border-b border-border flex items-center gap-2">
+            <span>🎯</span>
+            <h4 className="text-xs font-semibold">Top Assists</h4>
+          </div>
+          <div className="divide-y divide-border">
+            {displayAssists.slice(0, 5).map((player, index) => (
+              <PlayerStatRow 
+                key={index}
+                rank={index + 1}
+                playerName={player.playerName}
+                teamName={player.teamName}
+                teamLogo={player.teamLogo}
+                playerPhoto={player.playerPhoto}
+                value={player.assists}
+                label="assists"
+                onClick={() => handlePlayerClick({ ...player, assists: player.assists })}
+              />
+            ))}
+          </div>
+        </div>
       </div>
 
-      {/* Top Scorers */}
-      <div className="glass-card rounded-xl overflow-hidden animate-slide-up">
-        <div className="px-4 py-2 bg-secondary/30 border-b border-border flex items-center gap-2">
-          <span>⚽</span>
-          <h4 className="text-xs font-semibold">Top Scorers</h4>
-        </div>
-        <div className="divide-y divide-border">
-          {displayScorers.slice(0, 5).map((scorer, index) => (
-            <PlayerStatRow 
-              key={index}
-              rank={index + 1}
-              playerName={scorer.playerName}
-              teamName={scorer.teamName}
-              teamLogo={scorer.teamLogo}
-              playerPhoto={scorer.playerPhoto}
-              value={scorer.goals}
-              label="goals"
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Expected Goals (xG) */}
-      <div className="glass-card rounded-xl overflow-hidden animate-slide-up">
-        <div className="px-4 py-2 bg-secondary/30 border-b border-border flex items-center gap-2">
-          <span>📊</span>
-          <h4 className="text-xs font-semibold">Expected Goals (xG)</h4>
-        </div>
-        <div className="divide-y divide-border">
-          {mockXgLeaders.map((player, index) => (
-            <PlayerStatRow 
-              key={index}
-              rank={index + 1}
-              playerName={player.playerName}
-              teamName={player.teamName}
-              teamLogo={player.teamLogo}
-              playerPhoto={player.playerPhoto}
-              value={player.value}
-              label="xG"
-              decimals
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Top Assists */}
-      <div className="glass-card rounded-xl overflow-hidden animate-slide-up">
-        <div className="px-4 py-2 bg-secondary/30 border-b border-border flex items-center gap-2">
-          <span>🎯</span>
-          <h4 className="text-xs font-semibold">Top Assists</h4>
-        </div>
-        <div className="divide-y divide-border">
-          {displayAssists.slice(0, 5).map((player, index) => (
-            <PlayerStatRow 
-              key={index}
-              rank={index + 1}
-              playerName={player.playerName}
-              teamName={player.teamName}
-              teamLogo={player.teamLogo}
-              playerPhoto={player.playerPhoto}
-              value={player.assists}
-              label="assists"
-            />
-          ))}
-        </div>
-      </div>
-    </div>
+      {/* Player Detail Modal */}
+      {selectedPlayer && (
+        <PlayerDetailCard 
+          player={selectedPlayer}
+          onClose={() => setSelectedPlayer(null)}
+        />
+      )}
+    </>
   );
 }
 
@@ -367,7 +406,8 @@ function PlayerStatRow({
   playerPhoto, 
   value, 
   label,
-  decimals = false
+  decimals = false,
+  onClick
 }: { 
   rank: number;
   playerName: string;
@@ -377,9 +417,16 @@ function PlayerStatRow({
   value: number;
   label: string;
   decimals?: boolean;
+  onClick?: () => void;
 }) {
   return (
-    <div className="flex items-center gap-3 p-3">
+    <div 
+      className={cn(
+        "flex items-center gap-3 p-3 transition-colors",
+        onClick && "cursor-pointer hover:bg-secondary/30 active:bg-secondary/50"
+      )}
+      onClick={onClick}
+    >
       <span className={cn(
         "w-5 text-center text-sm font-bold",
         rank === 1 && "text-primary",
@@ -414,6 +461,10 @@ function PlayerStatRow({
         </p>
         <p className="text-[10px] text-muted-foreground">{label}</p>
       </div>
+
+      {onClick && (
+        <ChevronRight className="w-4 h-4 text-muted-foreground" />
+      )}
     </div>
   );
 }
