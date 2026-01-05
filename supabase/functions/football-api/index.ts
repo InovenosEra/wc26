@@ -130,6 +130,21 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`SportMonks error: ${response.status} ${response.statusText}`, errorText);
+
+      // Some SportMonks endpoints (especially for future tournaments) may legitimately not exist yet.
+      // For these optional actions, return an empty payload with 200 so the UI can gracefully fall back.
+      const allowEmptyOnNotFound =
+        action === 'topassists' ||
+        action === 'fixtures' ||
+        endpoint.startsWith('/assistscorers');
+
+      if (response.status === 404 && allowEmptyOnNotFound) {
+        return new Response(
+          JSON.stringify({ data: [], pagination: { count: 0, per_page: 0, current_page: 1, has_more: false } }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       return new Response(
         JSON.stringify({ error: `API error: ${response.status}`, details: errorText }),
         { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
