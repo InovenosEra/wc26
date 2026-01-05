@@ -290,8 +290,8 @@ function formatFixtures(fixtures: SportMonksFixture[]): FormattedFixture[] {
 // Check if API is configured and working
 export async function checkApiConnection(): Promise<boolean> {
   try {
-    // Use the fixtures endpoint to check connection - more reliable
-    const response = await fetch(`${FUNCTION_URL}?action=fixtures`, {
+    // Use the live endpoint to check connection - simplest and most reliable
+    const response = await fetch(`${FUNCTION_URL}?action=live`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -301,6 +301,7 @@ export async function checkApiConnection(): Promise<boolean> {
     if (!response.ok) return false;
     
     const data = await response.json();
+    // If we get data (even empty), the API is working
     return !data.error;
   } catch {
     return false;
