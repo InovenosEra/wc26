@@ -80,9 +80,17 @@ serve(async (req) => {
       }
     }
 
-    // If still no articles, return curated static news
-    if (articles.length === 0) {
-      articles = getCuratedNews();
+    // Supplement with curated news if we don't have enough articles
+    const curatedNews = getCuratedNews();
+    if (articles.length < 8) {
+      // Add curated articles that aren't duplicates
+      const existingTitles = new Set(articles.map(a => a.title.toLowerCase().substring(0, 30)));
+      for (const curated of curatedNews) {
+        if (!existingTitles.has(curated.title.toLowerCase().substring(0, 30))) {
+          articles.push(curated);
+        }
+        if (articles.length >= 12) break;
+      }
     }
 
     // Filter by team if specified
@@ -125,7 +133,7 @@ function parseRSS(xmlText: string, source: string): any[] {
   let match;
   let index = 0;
 
-  while ((match = itemRegex.exec(xmlText)) !== null && index < 10) {
+  while ((match = itemRegex.exec(xmlText)) !== null && index < 15) {
     const item = match[1];
     const title = extractTag(item, 'title');
     const description = extractTag(item, 'description');
@@ -133,12 +141,8 @@ function parseRSS(xmlText: string, source: string): any[] {
     const pubDate = extractTag(item, 'pubDate');
     const mediaUrl = extractMediaUrl(item);
 
-    if (title && (
-      title.toLowerCase().includes('world cup') ||
-      title.toLowerCase().includes('fifa') ||
-      title.toLowerCase().includes('football') ||
-      title.toLowerCase().includes('soccer')
-    )) {
+    // Accept all soccer/football articles, not just World Cup specific
+    if (title) {
       articles.push({
         id: `rss-${source}-${index}-${Date.now()}`,
         title: cleanHtml(title),
