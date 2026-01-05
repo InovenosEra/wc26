@@ -4,6 +4,7 @@ import { Trophy, Flag, Calendar, MapPin, Loader2, RefreshCw, Wifi, WifiOff } fro
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { fetchQualificationFixtures, QualificationFixture, checkApiConnection } from '@/services/footballApi';
+import { MatchOdds } from '@/components/MatchOdds';
 
 interface BracketMatch {
   id: string;
@@ -290,8 +291,13 @@ function TreeMatchCard({ match, size = 'normal' }: { match: BracketMatch; size?:
 }
 
 // Match card for qualifiers (larger, more detailed)
-function QualifierMatchCard({ match }: { match: BracketMatch }) {
+function QualifierMatchCard({ match, showOdds = false }: { match: BracketMatch; showOdds?: boolean }) {
   const isTbd = match.status === 'tbd';
+  const canShowOdds = showOdds && !isTbd && 
+    !match.homeTeam.includes('Winner') && 
+    !match.homeTeam.includes('TBD') &&
+    !match.awayTeam.includes('Winner') &&
+    !match.awayTeam.includes('TBD');
   
   return (
     <div className={cn(
@@ -349,6 +355,11 @@ function QualifierMatchCard({ match }: { match: BracketMatch }) {
           )}
         </div>
       </div>
+      
+      {/* Odds/Predictions Section */}
+      {canShowOdds && (
+        <MatchOdds homeTeam={match.homeTeam} awayTeam={match.awayTeam} compact />
+      )}
     </div>
   );
 }
@@ -365,8 +376,8 @@ function PlayoffPathBracket({ path }: { path: PlayoffPath }) {
           {/* Semi-finals column */}
           <div className="flex flex-col gap-2 flex-1">
             <div className="text-[8px] text-muted-foreground text-center mb-1">Semi-final</div>
-            <QualifierMatchCard match={path.semifinal1} />
-            {path.semifinal2 && <QualifierMatchCard match={path.semifinal2} />}
+            <QualifierMatchCard match={path.semifinal1} showOdds />
+            {path.semifinal2 && <QualifierMatchCard match={path.semifinal2} showOdds />}
           </div>
           
           {/* Connector */}
