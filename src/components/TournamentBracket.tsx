@@ -371,36 +371,39 @@ function PlayoffPathBracket({ path }: { path: PlayoffPath }) {
       <div className="px-3 py-2 bg-secondary/30 border-b border-border">
         <h4 className="text-xs font-semibold">{path.name}</h4>
       </div>
-      <div className="p-3">
-        <div className="flex items-center gap-2">
-          {/* Semi-finals column */}
-          <div className="flex flex-col gap-2 flex-1">
-            <div className="text-[8px] text-muted-foreground text-center mb-1">Semi-final</div>
-            <QualifierMatchCard match={path.semifinal1} showOdds />
-            {path.semifinal2 && <QualifierMatchCard match={path.semifinal2} showOdds />}
-          </div>
-          
-          {/* Connector */}
-          <div className="flex flex-col items-center justify-center">
-            <svg width="20" height={path.semifinal2 ? "80" : "40"} className="text-primary/40">
-              {path.semifinal2 ? (
-                <>
-                  <path d="M0,20 L10,20 L10,40 L20,40" fill="none" stroke="currentColor" strokeWidth="2" />
-                  <path d="M0,60 L10,60 L10,40 L20,40" fill="none" stroke="currentColor" strokeWidth="2" />
-                </>
-              ) : (
-                <path d="M0,20 L20,20" fill="none" stroke="currentColor" strokeWidth="2" />
-              )}
-            </svg>
-          </div>
-          
-          {/* Final column */}
-          <div className="flex flex-col gap-2 flex-1">
-            <div className="text-[8px] text-muted-foreground text-center mb-1">Final</div>
-            <QualifierMatchCard match={path.final} />
+      <ScrollArea className="w-full">
+        <div className="p-3 min-w-[500px]">
+          <div className="flex items-center gap-2">
+            {/* Semi-finals column */}
+            <div className="flex flex-col gap-2 flex-1 min-w-[200px]">
+              <div className="text-[8px] text-muted-foreground text-center mb-1">Semi-final</div>
+              <QualifierMatchCard match={path.semifinal1} showOdds />
+              {path.semifinal2 && <QualifierMatchCard match={path.semifinal2} showOdds />}
+            </div>
+            
+            {/* Connector */}
+            <div className="flex flex-col items-center justify-center flex-shrink-0">
+              <svg width="20" height={path.semifinal2 ? "80" : "40"} className="text-primary/40">
+                {path.semifinal2 ? (
+                  <>
+                    <path d="M0,20 L10,20 L10,40 L20,40" fill="none" stroke="currentColor" strokeWidth="2" />
+                    <path d="M0,60 L10,60 L10,40 L20,40" fill="none" stroke="currentColor" strokeWidth="2" />
+                  </>
+                ) : (
+                  <path d="M0,20 L20,20" fill="none" stroke="currentColor" strokeWidth="2" />
+                )}
+              </svg>
+            </div>
+            
+            {/* Final column */}
+            <div className="flex flex-col gap-2 flex-1 min-w-[200px]">
+              <div className="text-[8px] text-muted-foreground text-center mb-1">Final</div>
+              <QualifierMatchCard match={path.final} />
+            </div>
           </div>
         </div>
-      </div>
+        <ScrollBar orientation="horizontal" />
+      </ScrollArea>
     </div>
   );
 }
