@@ -13,11 +13,12 @@ import {
 import { Team } from '@/types';
 import { GroupStandings } from '@/components/GroupStandings';
 import { PlayerDetailCard, PlayerStats } from '@/components/PlayerDetailCard';
-import { Loader2, BarChart3, Users, Wifi, WifiOff, RefreshCw, ChevronRight } from 'lucide-react';
+import { KnockoutBracket, QualificationBracket } from '@/components/TournamentBracket';
+import { Loader2, BarChart3, Users, Wifi, WifiOff, RefreshCw, ChevronRight, Trophy, Flag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-type ViewType = 'standings' | 'scorers';
+type ViewType = 'standings' | 'knockout' | 'qualifiers' | 'scorers';
 
 export function StatsTab() {
   const [teams, setTeams] = useState<Team[]>([]);
@@ -122,33 +123,61 @@ export function StatsTab() {
       </div>
 
       {/* View Toggle */}
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-1.5 mb-4 overflow-x-auto pb-1">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => setView('standings')}
           className={cn(
-            "h-8 px-3 text-xs flex-1",
+            "h-8 px-2.5 text-[10px] whitespace-nowrap",
             view === 'standings' 
               ? "bg-primary/10 text-primary border border-primary/30" 
               : "text-muted-foreground"
           )}
         >
-          <Users className="w-3.5 h-3.5 mr-1.5" />
-          Group Standings
+          <Users className="w-3 h-3 mr-1" />
+          Groups
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setView('knockout')}
+          className={cn(
+            "h-8 px-2.5 text-[10px] whitespace-nowrap",
+            view === 'knockout' 
+              ? "bg-primary/10 text-primary border border-primary/30" 
+              : "text-muted-foreground"
+          )}
+        >
+          <Trophy className="w-3 h-3 mr-1" />
+          Knockout
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setView('qualifiers')}
+          className={cn(
+            "h-8 px-2.5 text-[10px] whitespace-nowrap",
+            view === 'qualifiers' 
+              ? "bg-primary/10 text-primary border border-primary/30" 
+              : "text-muted-foreground"
+          )}
+        >
+          <Flag className="w-3 h-3 mr-1" />
+          Qualifiers
         </Button>
         <Button
           variant="ghost"
           size="sm"
           onClick={() => setView('scorers')}
           className={cn(
-            "h-8 px-3 text-xs flex-1",
+            "h-8 px-2.5 text-[10px] whitespace-nowrap",
             view === 'scorers' 
               ? "bg-primary/10 text-primary border border-primary/30" 
               : "text-muted-foreground"
           )}
         >
-          👤 Personal Stats
+          👤 Stats
         </Button>
       </div>
 
@@ -159,6 +188,10 @@ export function StatsTab() {
         ) : (
           <GroupStandings teams={teams} />
         )
+      ) : view === 'knockout' ? (
+        <KnockoutBracket />
+      ) : view === 'qualifiers' ? (
+        <QualificationBracket />
       ) : (
         <TopScorersSection scorers={topScorers} assists={topAssists} apiConnected={apiConnected || false} />
       )}
