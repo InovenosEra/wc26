@@ -116,6 +116,14 @@ export interface FormattedTopScorer {
   goals: number;
 }
 
+export interface FormattedAssist {
+  playerName: string;
+  playerPhoto: string;
+  teamName: string;
+  teamLogo: string;
+  assists: number;
+}
+
 async function callSportMonksApi(action: string, params?: Record<string, string>): Promise<any> {
   const searchParams = new URLSearchParams({ action, ...params });
   
@@ -213,6 +221,22 @@ export async function fetchTopScorers(): Promise<FormattedTopScorer[]> {
     }));
   } catch (error) {
     console.error('Error fetching top scorers:', error);
+    return [];
+  }
+}
+
+export async function fetchTopAssists(): Promise<FormattedAssist[]> {
+  try {
+    const data = await callSportMonksApi('topassists');
+    return (data.data || []).slice(0, 10).map((item: SportMonksTopScorer) => ({
+      playerName: item.player?.display_name || 'Unknown',
+      playerPhoto: item.player?.image_path || '',
+      teamName: item.participant?.name || 'Unknown',
+      teamLogo: item.participant?.image_path || '',
+      assists: item.total || 0,
+    }));
+  } catch (error) {
+    console.error('Error fetching top assists:', error);
     return [];
   }
 }
