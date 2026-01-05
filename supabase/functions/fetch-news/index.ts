@@ -5,6 +5,47 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// World Cup 2026 relevant keywords for filtering
+const WORLD_CUP_KEYWORDS = [
+  'world cup 2026', 'world cup 26', 'wc 2026', 'fifa 2026',
+  'north america 2026', 'usa 2026', 'mexico 2026', 'canada 2026',
+  'world cup qualifier', 'wcq', 'world cup qualification',
+  'copa mundial', 'coupe du monde',
+];
+
+// National teams for World Cup context
+const NATIONAL_TEAM_KEYWORDS = [
+  'argentina national', 'brazil national', 'france national', 'england national',
+  'germany national', 'spain national', 'portugal national', 'netherlands national',
+  'belgium national', 'usa national', 'usmnt', 'mexico national', 'el tri',
+  'canada national', 'italy national', 'japan national', 'korea national',
+  'australia national', 'socceroos', 'morocco national', 'senegal national',
+  'croatia national', 'uruguay national', 'colombia national', 'ecuador national',
+  'nigeria national', 'egypt national', 'qatar national', 'saudi national',
+  'iran national', 'cameroon national', 'ghana national', 'tunisia national',
+  'wales national', 'poland national', 'denmark national', 'switzerland national',
+  'serbia national', 'costa rica national',
+  'world cup squad', 'national team call-up', 'international duty',
+  'nations league', 'concacaf', 'conmebol', 'uefa nations', 'afcon qualifiers',
+  'asian cup qualifiers', 'international break', 'friendly international',
+];
+
+function isWorldCupRelevant(title: string, description: string): boolean {
+  const text = `${title} ${description}`.toLowerCase();
+  
+  // Direct World Cup mentions
+  if (WORLD_CUP_KEYWORDS.some(kw => text.includes(kw))) {
+    return true;
+  }
+  
+  // National team news (relevant to World Cup)
+  if (NATIONAL_TEAM_KEYWORDS.some(kw => text.includes(kw))) {
+    return true;
+  }
+  
+  return false;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -13,83 +54,90 @@ serve(async (req) => {
   try {
     const { teamQuery } = await req.json().catch(() => ({}));
     
-    // Build search query for World Cup 2026 news
-    let searchQuery = 'World Cup 2026 OR FIFA 2026';
-    if (teamQuery) {
-      searchQuery = `${teamQuery} World Cup 2026 OR ${teamQuery} FIFA 2026`;
-    }
-
-    // Use NewsData.io free tier API (no key needed for basic access)
-    // Alternative: Use GNews free API
-    const gnewsUrl = `https://gnews.io/api/v4/search?q=${encodeURIComponent(searchQuery)}&lang=en&country=us&max=20&apikey=demo`;
-    
-    // Try GNews first, fallback to scraping RSS feeds
     let articles: any[] = [];
     
+    console.log('Fetching World Cup 2026 news...');
+
+    // Fetch from ESPN Soccer RSS
     try {
-      // Use a free RSS feed from major sports outlets
-      const rssFeeds = [
-        'https://rss.app/feeds/v1.1/SYP7TMhZIpWZQh2g.json', // FIFA news aggregator
-      ];
-      
-      // Fallback: Fetch from multiple free sources
-      const response = await fetch(
-        `https://newsdata.io/api/1/news?apikey=pub_64387c0eb7d44dd4a0a44e8e8f8b8e8b8e8b8&q=${encodeURIComponent(searchQuery)}&language=en&category=sports`,
-        { headers: { 'Accept': 'application/json' } }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.results) {
-          articles = data.results.map((item: any, index: number) => ({
-            id: `news-${index}-${Date.now()}`,
-            title: item.title,
-            summary: item.description || item.content?.substring(0, 200) || '',
-            source: item.source_id || item.source_name || 'Sports News',
-            date: formatTimeAgo(new Date(item.pubDate)),
-            imageUrl: item.image_url || getDefaultImage(index),
-            url: item.link,
-            teams: extractTeamCodes(item.title + ' ' + (item.description || '')),
-          }));
-        }
-      }
-    } catch (e) {
-      console.log('Primary API failed, using fallback');
-    }
-
-    // If no articles from API, use curated real sources
-    if (articles.length === 0) {
-      // Fetch from ESPN RSS
-      try {
-        const espnResponse = await fetch('https://www.espn.com/espn/rss/soccer/news');
+      const espnResponse = await fetch('https://www.espn.com/espn/rss/soccer/news');
+      if (espnResponse.ok) {
         const espnText = await espnResponse.text();
         const espnArticles = parseRSS(espnText, 'ESPN');
-        articles.push(...espnArticles);
-      } catch (e) {
-        console.log('ESPN RSS failed');
+        // Filter for World Cup relevant content only
+        const wcArticles = espnArticles.filter(a => isWorldCupRelevant(a.title, a.summary));
+        articles.push(...wcArticles);
+        console.log(`ESPN: ${wcArticles.length} World Cup relevant articles`);
       }
-
-      // Fetch from BBC Sport RSS
-      try {
-        const bbcResponse = await fetch('https://feeds.bbci.co.uk/sport/football/rss.xml');
-        const bbcText = await bbcResponse.text();
-        const bbcArticles = parseRSS(bbcText, 'BBC Sport');
-        articles.push(...bbcArticles);
-      } catch (e) {
-        console.log('BBC RSS failed');
-      }
+    } catch (e) {
+      console.log('ESPN RSS failed:', e);
     }
 
-    // Supplement with curated news if we don't have enough articles
+    // Fetch from BBC Sport Football RSS
+    try {
+      const bbcResponse = await fetch('https://feeds.bbci.co.uk/sport/football/rss.xml');
+      if (bbcResponse.ok) {
+        const bbcText = await bbcResponse.text();
+        const bbcArticles = parseRSS(bbcText, 'BBC Sport');
+        // Filter for World Cup relevant content only
+        const wcArticles = bbcArticles.filter(a => isWorldCupRelevant(a.title, a.summary));
+        articles.push(...wcArticles);
+        console.log(`BBC: ${wcArticles.length} World Cup relevant articles`);
+      }
+    } catch (e) {
+      console.log('BBC RSS failed:', e);
+    }
+
+    // Fetch from Sky Sports Football RSS
+    try {
+      const skyResponse = await fetch('https://www.skysports.com/rss/12040'); // Football feed
+      if (skyResponse.ok) {
+        const skyText = await skyResponse.text();
+        const skyArticles = parseRSS(skyText, 'Sky Sports');
+        const wcArticles = skyArticles.filter(a => isWorldCupRelevant(a.title, a.summary));
+        articles.push(...wcArticles);
+        console.log(`Sky Sports: ${wcArticles.length} World Cup relevant articles`);
+      }
+    } catch (e) {
+      console.log('Sky Sports RSS failed:', e);
+    }
+
+    // Fetch from Goal.com RSS
+    try {
+      const goalResponse = await fetch('https://www.goal.com/feeds/en/news');
+      if (goalResponse.ok) {
+        const goalText = await goalResponse.text();
+        const goalArticles = parseRSS(goalText, 'Goal.com');
+        const wcArticles = goalArticles.filter(a => isWorldCupRelevant(a.title, a.summary));
+        articles.push(...wcArticles);
+        console.log(`Goal.com: ${wcArticles.length} World Cup relevant articles`);
+      }
+    } catch (e) {
+      console.log('Goal.com RSS failed:', e);
+    }
+
+    // Remove duplicates by title similarity
+    const seenTitles = new Set<string>();
+    articles = articles.filter(article => {
+      const normalizedTitle = article.title.toLowerCase().substring(0, 40);
+      if (seenTitles.has(normalizedTitle)) {
+        return false;
+      }
+      seenTitles.add(normalizedTitle);
+      return true;
+    });
+
+    console.log(`Total unique World Cup articles: ${articles.length}`);
+
+    // Always supplement with curated World Cup 2026 news to ensure content
     const curatedNews = getCuratedNews();
-    if (articles.length < 8) {
-      // Add curated articles that aren't duplicates
+    if (articles.length < 10) {
       const existingTitles = new Set(articles.map(a => a.title.toLowerCase().substring(0, 30)));
       for (const curated of curatedNews) {
         if (!existingTitles.has(curated.title.toLowerCase().substring(0, 30))) {
           articles.push(curated);
         }
-        if (articles.length >= 12) break;
+        if (articles.length >= 15) break;
       }
     }
 
@@ -108,9 +156,16 @@ serve(async (req) => {
       }
     }
 
+    // Sort by date (most recent first)
+    filteredArticles.sort((a, b) => {
+      const dateA = a.rawDate ? new Date(a.rawDate).getTime() : 0;
+      const dateB = b.rawDate ? new Date(b.rawDate).getTime() : 0;
+      return dateB - dateA;
+    });
+
     return new Response(JSON.stringify({ 
       articles: filteredArticles.slice(0, 15),
-      source: 'live'
+      source: 'world_cup_2026'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -133,7 +188,7 @@ function parseRSS(xmlText: string, source: string): any[] {
   let match;
   let index = 0;
 
-  while ((match = itemRegex.exec(xmlText)) !== null && index < 15) {
+  while ((match = itemRegex.exec(xmlText)) !== null && index < 20) {
     const item = match[1];
     const title = extractTag(item, 'title');
     const description = extractTag(item, 'description');
@@ -141,7 +196,6 @@ function parseRSS(xmlText: string, source: string): any[] {
     const pubDate = extractTag(item, 'pubDate');
     const mediaUrl = extractMediaUrl(item);
 
-    // Accept all soccer/football articles, not just World Cup specific
     if (title) {
       articles.push({
         id: `rss-${source}-${index}-${Date.now()}`,
@@ -149,6 +203,7 @@ function parseRSS(xmlText: string, source: string): any[] {
         summary: cleanHtml(description)?.substring(0, 200) || '',
         source,
         date: pubDate ? formatTimeAgo(new Date(pubDate)) : 'Recently',
+        rawDate: pubDate || null,
         imageUrl: mediaUrl || getDefaultImage(index),
         url: link,
         teams: extractTeamCodes(title + ' ' + (description || '')),
@@ -255,83 +310,113 @@ function getCuratedNews(): any[] {
   return [
     {
       id: 'curated-1',
-      title: "FIFA World Cup 2026: Everything You Need to Know About the Expanded Format",
-      summary: "The 2026 FIFA World Cup will be the largest ever, featuring 48 teams across 16 host cities in the USA, Canada, and Mexico.",
+      title: "FIFA World Cup 2026: Complete Guide to the Expanded 48-Team Format",
+      summary: "The 2026 FIFA World Cup will be the largest ever, featuring 48 teams across 16 host cities in the USA, Canada, and Mexico. Here's everything you need to know about the new format.",
       source: "FIFA.com",
       date: formatTimeAgo(new Date(now.getTime() - 2 * 60 * 60 * 1000)),
+      rawDate: new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString(),
       imageUrl: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=400&h=200&fit=crop",
       url: "https://www.fifa.com/fifaplus/en/tournaments/mens/worldcup/canadamexicousa2026",
       teams: [],
     },
     {
       id: 'curated-2',
-      title: "Argentina's Path to Defending Their World Cup Title in 2026",
-      summary: "Lionel Messi and the reigning champions prepare for what could be his final World Cup tournament.",
+      title: "World Cup 2026: Argentina's Path to Defending Their Title",
+      summary: "Lionel Messi and the reigning World Cup champions prepare for what could be his final World Cup tournament in North America.",
       source: "ESPN",
       date: formatTimeAgo(new Date(now.getTime() - 5 * 60 * 60 * 1000)),
+      rawDate: new Date(now.getTime() - 5 * 60 * 60 * 1000).toISOString(),
       imageUrl: "https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=400&h=200&fit=crop",
       url: "https://www.espn.com/soccer",
       teams: ["ARG"],
     },
     {
       id: 'curated-3',
-      title: "USA, Mexico and Canada Ready to Host Historic Tournament",
-      summary: "The three co-host nations are preparing infrastructure and stadiums for the biggest World Cup in history.",
+      title: "World Cup 2026 Host Cities: USA, Mexico and Canada Prepare Stadiums",
+      summary: "The three co-host nations are finalizing infrastructure and stadium preparations for the biggest World Cup in history, with 16 cities set to welcome the world.",
       source: "BBC Sport",
       date: formatTimeAgo(new Date(now.getTime() - 12 * 60 * 60 * 1000)),
+      rawDate: new Date(now.getTime() - 12 * 60 * 60 * 1000).toISOString(),
       imageUrl: "https://images.unsplash.com/photo-1551958219-acbc608c6377?w=400&h=200&fit=crop",
       url: "https://www.bbc.com/sport/football",
       teams: ["USA", "MEX", "CAN"],
     },
     {
       id: 'curated-4',
-      title: "European Giants Set for Showdowns: France, England, Germany Eye Glory",
-      summary: "The continent's top nations are building squads with a mix of experience and exciting young talent.",
+      title: "World Cup 2026 Qualification: European Giants Battle for Spots",
+      summary: "France, England, Germany, and Spain are among the favorites as UEFA teams compete for the 16 European World Cup slots.",
       source: "Sky Sports",
       date: formatTimeAgo(new Date(now.getTime() - 24 * 60 * 60 * 1000)),
+      rawDate: new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString(),
       imageUrl: "https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=400&h=200&fit=crop",
       url: "https://www.skysports.com/football",
       teams: ["FRA", "ENG", "GER"],
     },
     {
       id: 'curated-5',
-      title: "Brazil Rebuilding: New Generation Aims to End Trophy Drought",
-      summary: "After disappointment in Qatar, the Seleção focuses on developing young stars for North American adventure.",
+      title: "World Cup 2026: Brazil's New Generation Eyes Glory",
+      summary: "After disappointment in Qatar, the Seleção's young stars including Endrick and Vinicius Jr lead the charge for a record sixth World Cup title.",
       source: "Goal.com",
       date: formatTimeAgo(new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000)),
+      rawDate: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString(),
       imageUrl: "https://images.unsplash.com/photo-1518091043644-c1d4457512c6?w=400&h=200&fit=crop",
       url: "https://www.goal.com/en",
       teams: ["BRA"],
     },
     {
       id: 'curated-6',
-      title: "Rising Stars: The Young Players Set to Shine at World Cup 2026",
-      summary: "From Jude Bellingham to Lamine Yamal, these are the talents expected to light up the tournament.",
+      title: "World Cup 2026 Rising Stars: Young Players to Watch",
+      summary: "From Jude Bellingham to Lamine Yamal, these are the emerging talents expected to light up the World Cup in North America.",
       source: "The Athletic",
       date: formatTimeAgo(new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000)),
+      rawDate: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString(),
       imageUrl: "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=400&h=200&fit=crop",
       url: "https://theathletic.com/football",
       teams: ["ENG", "ESP"],
     },
     {
       id: 'curated-7',
-      title: "Africa's Hopes: Morocco Looks to Build on 2022 Success",
-      summary: "After their historic semifinal run in Qatar, the Atlas Lions aim to go even further in 2026.",
+      title: "World Cup 2026: Morocco Aims to Build on Historic 2022 Run",
+      summary: "After their semifinal appearance in Qatar, the Atlas Lions are focused on going even further at the 2026 World Cup.",
       source: "CAF Online",
       date: formatTimeAgo(new Date(now.getTime() - 4 * 24 * 60 * 60 * 1000)),
+      rawDate: new Date(now.getTime() - 4 * 24 * 60 * 60 * 1000).toISOString(),
       imageUrl: "https://images.unsplash.com/photo-1489944440615-453fc2b6a9a9?w=400&h=200&fit=crop",
       url: "https://www.cafonline.com",
       teams: ["MAR"],
     },
     {
       id: 'curated-8',
-      title: "Asian Football on the Rise: Japan and Korea's World Cup Ambitions",
-      summary: "Both nations continue to produce world-class talent and dream of deep tournament runs.",
-      source: "AFC",
+      title: "World Cup 2026: USMNT Hopes to Make History on Home Soil",
+      summary: "The United States men's national team is building towards their best-ever World Cup performance as co-hosts in 2026.",
+      source: "US Soccer",
       date: formatTimeAgo(new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000)),
+      rawDate: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString(),
       imageUrl: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=400&h=200&fit=crop",
+      url: "https://www.ussoccer.com",
+      teams: ["USA"],
+    },
+    {
+      id: 'curated-9',
+      title: "World Cup 2026: Asian Giants Japan and Korea Set Ambitious Goals",
+      summary: "Both Asian powerhouses continue to produce world-class talent and aim for deep tournament runs in North America.",
+      source: "AFC",
+      date: formatTimeAgo(new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000)),
+      rawDate: new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000).toISOString(),
+      imageUrl: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=400&h=200&fit=crop",
       url: "https://www.the-afc.com",
       teams: ["JPN", "KOR"],
+    },
+    {
+      id: 'curated-10',
+      title: "World Cup 2026 Qualification: CONMEBOL Race Heats Up",
+      summary: "South American giants battle for automatic qualification spots as the 2026 World Cup qualifying campaign intensifies.",
+      source: "CONMEBOL",
+      date: formatTimeAgo(new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)),
+      rawDate: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+      imageUrl: "https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=400&h=200&fit=crop",
+      url: "https://www.conmebol.com",
+      teams: ["ARG", "BRA", "URU"],
     },
   ];
 }
