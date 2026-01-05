@@ -290,7 +290,8 @@ function formatFixtures(fixtures: SportMonksFixture[]): FormattedFixture[] {
 // Check if API is configured and working
 export async function checkApiConnection(): Promise<boolean> {
   try {
-    const response = await fetch(`${FUNCTION_URL}?action=leagues`, {
+    // Use the fixtures endpoint to check connection - more reliable
+    const response = await fetch(`${FUNCTION_URL}?action=fixtures`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
