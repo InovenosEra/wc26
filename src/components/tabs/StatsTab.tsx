@@ -271,8 +271,19 @@ function TopScorersSection({
     { playerName: 'Bukayo Saka', teamName: 'England', teamLogo: 'https://flagcdn.com/w80/gb-eng.png', playerPhoto: 'https://cdn.sportmonks.com/images/soccer/players/6/37055750.png', assists: 0 },
   ];
 
-  const displayScorers = scorers.length > 0 ? scorers : mockScorers;
-  const displayAssists = assists.length > 0 ? assists : mockAssists;
+  // Create a map of player photos from mock data for fallback
+  const mockPhotoMap: Record<string, string> = {};
+  [...mockScorers, ...mockXgLeaders, ...mockAssists].forEach(p => {
+    if (p.playerPhoto) mockPhotoMap[p.playerName] = p.playerPhoto;
+  });
+
+  // Merge API data with mock photos if missing
+  const displayScorers = scorers.length > 0 
+    ? scorers.map(s => ({ ...s, playerPhoto: s.playerPhoto || mockPhotoMap[s.playerName] || '' }))
+    : mockScorers;
+  const displayAssists = assists.length > 0 
+    ? assists.map(a => ({ ...a, playerPhoto: a.playerPhoto || mockPhotoMap[a.playerName] || '' }))
+    : mockAssists;
 
   const handlePlayerClick = (player: {
     playerName: string;
