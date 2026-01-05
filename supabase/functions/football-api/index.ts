@@ -63,8 +63,8 @@ serve(async (req) => {
         break;
 
       case 'topassists':
-        // Get top assists
-        endpoint = `/topassists/seasons/${WORLD_CUP_SEASON_ID}`;
+        // Get top assists - SportMonks uses 'assistscorers' endpoint
+        endpoint = `/assistscorers/seasons/${WORLD_CUP_SEASON_ID}`;
         params.append('include', 'player;participant');
         params.append('per_page', '20');
         break;
