@@ -1,15 +1,103 @@
 import { Team } from '@/types';
 import { cn } from '@/lib/utils';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Loader2 } from 'lucide-react';
 
 interface GroupStandingsProps {
   teams: Team[];
 }
 
-// Mock standings data - in production this would come from the API
-const mockStandings: Record<string, { played: number; won: number; drawn: number; lost: number; gf: number; ga: number; pts: number }> = {};
+interface TeamStats {
+  played: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  gf: number;
+  ga: number;
+  pts: number;
+}
 
 export function GroupStandings({ teams }: GroupStandingsProps) {
-  // Group teams by their group_name
+  // Fetch matches and calculate standings
+  const { data: standings, isLoading } = useQuery({
+    queryKey: ['group-standings'],
+    queryFn: async () => {
+      const { data: matches, error } = await supabase
+        .from('matches')
+        .select('home_team_id, away_team_id, home_score, away_score, status')
+        .in('status', ['finished', 'FT', 'AET', 'PEN']);
+
+      if (error) throw error;
+
+      // Calculate standings from match results
+      const teamStats: Record<string, TeamStats> = {};
+
+      // Initialize all teams with zero stats
+      teams.forEach(team => {
+        teamStats[team.id] = {
+          played: 0,
+          won: 0,
+          drawn: 0,
+          lost: 0,
+          gf: 0,
+          ga: 0,
+          pts: 0
+        };
+      });
+
+      // Process each finished match
+      matches?.forEach(match => {
+        if (match.home_score === null || match.away_score === null) return;
+
+        const homeId = match.home_team_id;
+        const awayId = match.away_team_id;
+        const homeScore = match.home_score;
+        const awayScore = match.away_score;
+
+        if (!homeId || !awayId) return;
+
+        // Initialize if not exists
+        if (!teamStats[homeId]) {
+          teamStats[homeId] = { played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, pts: 0 };
+        }
+        if (!teamStats[awayId]) {
+          teamStats[awayId] = { played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, pts: 0 };
+        }
+
+        // Update stats for home team
+        teamStats[homeId].played++;
+        teamStats[homeId].gf += homeScore;
+        teamStats[homeId].ga += awayScore;
+
+        // Update stats for away team
+        teamStats[awayId].played++;
+        teamStats[awayId].gf += awayScore;
+        teamStats[awayId].ga += homeScore;
+
+        // Determine result
+        if (homeScore > awayScore) {
+          teamStats[homeId].won++;
+          teamStats[homeId].pts += 3;
+          teamStats[awayId].lost++;
+        } else if (homeScore < awayScore) {
+          teamStats[awayId].won++;
+          teamStats[awayId].pts += 3;
+          teamStats[homeId].lost++;
+        } else {
+          teamStats[homeId].drawn++;
+          teamStats[homeId].pts += 1;
+          teamStats[awayId].drawn++;
+          teamStats[awayId].pts += 1;
+        }
+      });
+
+      return teamStats;
+    },
+    staleTime: 60000, // 1 minute
+  });
+
+  // Group teams by their group_name and sort by standings
   const groupedTeams = teams.reduce((acc, team) => {
     const group = team.group_name || 'Unknown';
     if (!acc[group]) {
@@ -19,25 +107,45 @@ export function GroupStandings({ teams }: GroupStandingsProps) {
     return acc;
   }, {} as Record<string, Team[]>);
 
-  const groups = Object.keys(groupedTeams).sort();
+  // Sort teams within each group by points, then goal difference, then goals scored
+  const sortedGroupedTeams = Object.entries(groupedTeams).reduce((acc, [group, groupTeams]) => {
+    acc[group] = [...groupTeams].sort((a, b) => {
+      const statsA = standings?.[a.id] || { pts: 0, gf: 0, ga: 0 };
+      const statsB = standings?.[b.id] || { pts: 0, gf: 0, ga: 0 };
+      
+      // Sort by points
+      if (statsB.pts !== statsA.pts) return statsB.pts - statsA.pts;
+      
+      // Then by goal difference
+      const gdA = statsA.gf - statsA.ga;
+      const gdB = statsB.gf - statsB.ga;
+      if (gdB !== gdA) return gdB - gdA;
+      
+      // Then by goals scored
+      return statsB.gf - statsA.gf;
+    });
+    return acc;
+  }, {} as Record<string, Team[]>);
+
+  const groups = Object.keys(sortedGroupedTeams).sort();
 
   // Get qualification indicator for position
   const getQualificationIndicator = (position: number) => {
     if (position <= 2) {
-      // Top 2 automatically qualify
-      return {
-        color: 'bg-accent',
-        label: 'Qualified',
-      };
+      return { color: 'bg-accent', label: 'Qualified' };
     } else if (position === 3) {
-      // 3rd place may qualify (8 best 3rd-placed teams)
-      return {
-        color: 'bg-primary',
-        label: 'Possible',
-      };
+      return { color: 'bg-primary', label: 'Possible' };
     }
     return null;
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -73,8 +181,8 @@ export function GroupStandings({ teams }: GroupStandingsProps) {
                 </tr>
               </thead>
               <tbody>
-                {groupedTeams[groupName].map((team, index) => {
-                  const stats = mockStandings[team.id] || {
+                {sortedGroupedTeams[groupName].map((team, index) => {
+                  const stats = standings?.[team.id] || {
                     played: 0,
                     won: 0,
                     drawn: 0,
