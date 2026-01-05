@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { TrendingUp, Loader2 } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
 
 // FIFA Rankings data (December 2024) - used for probability calculations
 const fifaRankings: Record<string, number> = {
@@ -30,6 +30,39 @@ const fifaRankings: Record<string, number> = {
   'Iraq': 63,
 };
 
+// Team form data (last 5 results: W=Win, D=Draw, L=Loss)
+// Based on recent World Cup qualifier results
+type FormResult = 'W' | 'D' | 'L';
+const teamForm: Record<string, FormResult[]> = {
+  // UEFA - Path A
+  'Italy': ['W', 'W', 'D', 'W', 'W'],
+  'Wales': ['W', 'D', 'L', 'W', 'D'],
+  'Bosnia-Herzegovina': ['D', 'W', 'L', 'D', 'W'],
+  'Northern Ireland': ['L', 'D', 'L', 'W', 'L'],
+  // UEFA - Path B
+  'Ukraine': ['W', 'W', 'W', 'D', 'W'],
+  'Sweden': ['W', 'D', 'W', 'L', 'W'],
+  'Poland': ['W', 'W', 'D', 'W', 'D'],
+  'Albania': ['D', 'W', 'W', 'L', 'D'],
+  // UEFA - Path C
+  'Slovakia': ['W', 'D', 'W', 'W', 'L'],
+  'Kosovo': ['L', 'W', 'D', 'L', 'W'],
+  'Turkey': ['W', 'W', 'W', 'D', 'W'],
+  'Romania': ['W', 'D', 'W', 'W', 'D'],
+  // UEFA - Path D
+  'Czechia': ['D', 'W', 'W', 'L', 'W'],
+  'Ireland': ['L', 'D', 'W', 'D', 'L'],
+  'Denmark': ['W', 'W', 'W', 'W', 'D'],
+  'North Macedonia': ['L', 'L', 'D', 'W', 'L'],
+  // Intercontinental
+  'New Caledonia': ['W', 'W', 'L', 'W', 'D'],
+  'Jamaica': ['D', 'W', 'L', 'W', 'W'],
+  'DR Congo': ['W', 'W', 'D', 'W', 'W'],
+  'Bolivia': ['L', 'D', 'L', 'W', 'L'],
+  'Suriname': ['W', 'L', 'L', 'D', 'W'],
+  'Iraq': ['W', 'D', 'W', 'W', 'D'],
+};
+
 interface MatchOddsProps {
   homeTeam: string;
   awayTeam: string;
@@ -37,22 +70,11 @@ interface MatchOddsProps {
 }
 
 function calculateWinProbability(homeRank: number, awayRank: number): { home: number; draw: number; away: number } {
-  // Use ELO-style probability calculation based on ranking difference
-  // Lower rank = better team
   const rankDiff = awayRank - homeRank;
-  
-  // Base draw probability (around 25% for international matches)
   const baseDraw = 0.22;
-  
-  // Calculate win probability using logistic function
-  // The divisor controls how much ranking difference matters
   const homeWinBase = 1 / (1 + Math.pow(10, -rankDiff / 100));
-  
-  // Add home advantage bonus (about 5-8% in international football)
   const homeAdvantage = 0.06;
   const homeWin = Math.min(0.85, Math.max(0.1, homeWinBase + homeAdvantage));
-  
-  // Distribute remaining probability
   const awayWin = Math.min(0.85, Math.max(0.1, 1 - homeWin - baseDraw));
   const draw = 1 - homeWin - awayWin;
   
@@ -63,11 +85,30 @@ function calculateWinProbability(homeRank: number, awayRank: number): { home: nu
   };
 }
 
+function FormIndicator({ form }: { form: FormResult[] }) {
+  return (
+    <div className="flex items-center gap-0.5">
+      {form.map((result, idx) => (
+        <div
+          key={idx}
+          className={cn(
+            "w-3 h-3 rounded-sm flex items-center justify-center text-[7px] font-bold",
+            result === 'W' && "bg-green-500/80 text-white",
+            result === 'D' && "bg-yellow-500/80 text-white",
+            result === 'L' && "bg-red-500/80 text-white"
+          )}
+        >
+          {result}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function MatchOdds({ homeTeam, awayTeam, compact = true }: MatchOddsProps) {
   const [odds, setOdds] = useState<{ home: number; draw: number; away: number } | null>(null);
   
   useEffect(() => {
-    // Skip for TBD/Winner matches
     if (
       homeTeam.includes('Winner') || 
       homeTeam.includes('TBD') ||
@@ -90,41 +131,59 @@ export function MatchOdds({ homeTeam, awayTeam, compact = true }: MatchOddsProps
   
   const homeTeamShort = homeTeam.slice(0, 3).toUpperCase();
   const awayTeamShort = awayTeam.slice(0, 3).toUpperCase();
+  const homeForm = teamForm[homeTeam];
+  const awayForm = teamForm[awayTeam];
   
-  // Determine favorite
   const favorite = odds.home > odds.away ? 'home' : odds.away > odds.home ? 'away' : 'draw';
   
   if (compact) {
     return (
-      <div className="px-2 py-1.5 bg-secondary/20 border-t border-border/30">
+      <div className="px-2 py-1.5 bg-secondary/20 border-t border-border/30 space-y-1.5">
+        {/* Form Section */}
+        {(homeForm || awayForm) && (
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[8px] text-muted-foreground w-7">{homeTeamShort}</span>
+              {homeForm ? <FormIndicator form={homeForm} /> : <span className="text-[8px] text-muted-foreground">-</span>}
+            </div>
+            <span className="text-[7px] text-muted-foreground/60">Form</span>
+            <div className="flex items-center gap-1.5">
+              {awayForm ? <FormIndicator form={awayForm} /> : <span className="text-[8px] text-muted-foreground">-</span>}
+              <span className="text-[8px] text-muted-foreground w-7 text-right">{awayTeamShort}</span>
+            </div>
+          </div>
+        )}
+        
+        {/* Odds Section */}
         <div className="flex items-center justify-between gap-1">
           <div className="flex items-center gap-1 text-[8px] text-muted-foreground">
             <TrendingUp className="w-2.5 h-2.5" />
-            <span>Win Prob.</span>
+            <span>Win %</span>
           </div>
           <div className="flex items-center gap-2">
             <div className={cn(
               "text-[9px] font-semibold px-1.5 py-0.5 rounded",
               favorite === 'home' ? "bg-primary/20 text-primary" : "text-muted-foreground"
             )}>
-              {homeTeamShort} {odds.home}%
+              {odds.home}%
             </div>
             <div className={cn(
               "text-[9px] font-medium px-1 py-0.5",
               favorite === 'draw' ? "text-primary" : "text-muted-foreground/60"
             )}>
-              Draw {odds.draw}%
+              {odds.draw}%
             </div>
             <div className={cn(
               "text-[9px] font-semibold px-1.5 py-0.5 rounded",
               favorite === 'away' ? "bg-primary/20 text-primary" : "text-muted-foreground"
             )}>
-              {awayTeamShort} {odds.away}%
+              {odds.away}%
             </div>
           </div>
         </div>
+        
         {/* Visual bar */}
-        <div className="flex h-1 mt-1 rounded-full overflow-hidden bg-muted/30">
+        <div className="flex h-1 rounded-full overflow-hidden bg-muted/30">
           <div 
             className={cn(
               "transition-all",
@@ -150,6 +209,23 @@ export function MatchOdds({ homeTeam, awayTeam, compact = true }: MatchOddsProps
   
   return (
     <div className="px-3 py-2 bg-secondary/20 border-t border-border/30">
+      {/* Form Section */}
+      {(homeForm || awayForm) && (
+        <div className="mb-3">
+          <div className="text-[10px] text-muted-foreground font-medium mb-2">Recent Form (Last 5)</div>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-muted-foreground">{homeTeam}</span>
+              {homeForm && <FormIndicator form={homeForm} />}
+            </div>
+            <div className="flex items-center gap-2">
+              {awayForm && <FormIndicator form={awayForm} />}
+              <span className="text-[10px] text-muted-foreground">{awayTeam}</span>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="flex items-center gap-2 mb-2">
         <TrendingUp className="w-3 h-3 text-muted-foreground" />
         <span className="text-[10px] text-muted-foreground font-medium">Win Probability (FIFA Rankings)</span>
