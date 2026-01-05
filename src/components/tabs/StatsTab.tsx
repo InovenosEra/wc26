@@ -246,29 +246,29 @@ function TopScorersSection({
 }) {
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerStats | null>(null);
 
-  // Mock data for when API is not connected
+  // Mock data for when API is not connected - using SportMonks CDN for player images
   const mockScorers = [
-    { playerName: 'Kylian Mbappé', teamName: 'France', teamLogo: 'https://flagcdn.com/w80/fr.png', playerPhoto: '', goals: 0 },
-    { playerName: 'Erling Haaland', teamName: 'Norway', teamLogo: 'https://flagcdn.com/w80/no.png', playerPhoto: '', goals: 0 },
-    { playerName: 'Lionel Messi', teamName: 'Argentina', teamLogo: 'https://flagcdn.com/w80/ar.png', playerPhoto: '', goals: 0 },
-    { playerName: 'Harry Kane', teamName: 'England', teamLogo: 'https://flagcdn.com/w80/gb-eng.png', playerPhoto: '', goals: 0 },
-    { playerName: 'Vinícius Jr.', teamName: 'Brazil', teamLogo: 'https://flagcdn.com/w80/br.png', playerPhoto: '', goals: 0 },
+    { playerName: 'Kylian Mbappé', teamName: 'France', teamLogo: 'https://flagcdn.com/w80/fr.png', playerPhoto: 'https://cdn.sportmonks.com/images/soccer/players/31/85095807.png', goals: 0 },
+    { playerName: 'Erling Haaland', teamName: 'Norway', teamLogo: 'https://flagcdn.com/w80/no.png', playerPhoto: 'https://cdn.sportmonks.com/images/soccer/players/3/1719299.png', goals: 0 },
+    { playerName: 'Lionel Messi', teamName: 'Argentina', teamLogo: 'https://flagcdn.com/w80/ar.png', playerPhoto: 'https://cdn.sportmonks.com/images/soccer/players/14/50000782.png', goals: 0 },
+    { playerName: 'Harry Kane', teamName: 'England', teamLogo: 'https://flagcdn.com/w80/gb-eng.png', playerPhoto: 'https://cdn.sportmonks.com/images/soccer/players/18/986.png', goals: 0 },
+    { playerName: 'Vinícius Jr.', teamName: 'Brazil', teamLogo: 'https://flagcdn.com/w80/br.png', playerPhoto: 'https://cdn.sportmonks.com/images/soccer/players/10/37036938.png', goals: 0 },
   ];
 
   const mockXgLeaders = [
-    { playerName: 'Erling Haaland', teamName: 'Norway', teamLogo: 'https://flagcdn.com/w80/no.png', playerPhoto: '', value: 0 },
-    { playerName: 'Kylian Mbappé', teamName: 'France', teamLogo: 'https://flagcdn.com/w80/fr.png', playerPhoto: '', value: 0 },
-    { playerName: 'Harry Kane', teamName: 'England', teamLogo: 'https://flagcdn.com/w80/gb-eng.png', playerPhoto: '', value: 0 },
-    { playerName: 'Lautaro Martínez', teamName: 'Argentina', teamLogo: 'https://flagcdn.com/w80/ar.png', playerPhoto: '', value: 0 },
-    { playerName: 'Vinícius Jr.', teamName: 'Brazil', teamLogo: 'https://flagcdn.com/w80/br.png', playerPhoto: '', value: 0 },
+    { playerName: 'Erling Haaland', teamName: 'Norway', teamLogo: 'https://flagcdn.com/w80/no.png', playerPhoto: 'https://cdn.sportmonks.com/images/soccer/players/3/1719299.png', value: 0 },
+    { playerName: 'Kylian Mbappé', teamName: 'France', teamLogo: 'https://flagcdn.com/w80/fr.png', playerPhoto: 'https://cdn.sportmonks.com/images/soccer/players/31/85095807.png', value: 0 },
+    { playerName: 'Harry Kane', teamName: 'England', teamLogo: 'https://flagcdn.com/w80/gb-eng.png', playerPhoto: 'https://cdn.sportmonks.com/images/soccer/players/18/986.png', value: 0 },
+    { playerName: 'Lautaro Martínez', teamName: 'Argentina', teamLogo: 'https://flagcdn.com/w80/ar.png', playerPhoto: 'https://cdn.sportmonks.com/images/soccer/players/9/37058825.png', value: 0 },
+    { playerName: 'Vinícius Jr.', teamName: 'Brazil', teamLogo: 'https://flagcdn.com/w80/br.png', playerPhoto: 'https://cdn.sportmonks.com/images/soccer/players/10/37036938.png', value: 0 },
   ];
 
   const mockAssists = [
-    { playerName: 'Kevin De Bruyne', teamName: 'Belgium', teamLogo: 'https://flagcdn.com/w80/be.png', playerPhoto: '', assists: 0 },
-    { playerName: 'Lionel Messi', teamName: 'Argentina', teamLogo: 'https://flagcdn.com/w80/ar.png', playerPhoto: '', assists: 0 },
-    { playerName: 'Bruno Fernandes', teamName: 'Portugal', teamLogo: 'https://flagcdn.com/w80/pt.png', playerPhoto: '', assists: 0 },
-    { playerName: 'Florian Wirtz', teamName: 'Germany', teamLogo: 'https://flagcdn.com/w80/de.png', playerPhoto: '', assists: 0 },
-    { playerName: 'Bukayo Saka', teamName: 'England', teamLogo: 'https://flagcdn.com/w80/gb-eng.png', playerPhoto: '', assists: 0 },
+    { playerName: 'Kevin De Bruyne', teamName: 'Belgium', teamLogo: 'https://flagcdn.com/w80/be.png', playerPhoto: 'https://cdn.sportmonks.com/images/soccer/players/6/3430.png', assists: 0 },
+    { playerName: 'Lionel Messi', teamName: 'Argentina', teamLogo: 'https://flagcdn.com/w80/ar.png', playerPhoto: 'https://cdn.sportmonks.com/images/soccer/players/14/50000782.png', assists: 0 },
+    { playerName: 'Bruno Fernandes', teamName: 'Portugal', teamLogo: 'https://flagcdn.com/w80/pt.png', playerPhoto: 'https://cdn.sportmonks.com/images/soccer/players/9/37028361.png', assists: 0 },
+    { playerName: 'Florian Wirtz', teamName: 'Germany', teamLogo: 'https://flagcdn.com/w80/de.png', playerPhoto: 'https://cdn.sportmonks.com/images/soccer/players/25/37061401.png', assists: 0 },
+    { playerName: 'Bukayo Saka', teamName: 'England', teamLogo: 'https://flagcdn.com/w80/gb-eng.png', playerPhoto: 'https://cdn.sportmonks.com/images/soccer/players/6/37055750.png', assists: 0 },
   ];
 
   const displayScorers = scorers.length > 0 ? scorers : mockScorers;
