@@ -102,10 +102,33 @@ serve(async (req) => {
         );
       }
 
-      case 'live':
-        endpoint = '/fixtures';
-        params = { live: 'all' };
-        break;
+      case 'live': {
+        // Only fetch live matches for WC and qualifier leagues
+        const allLeagueIds = [WORLD_CUP_LEAGUE_ID, ...QUALIFIER_LEAGUES.map(l => l.id)];
+        const liveResults: any[] = [];
+
+        for (const leagueId of allLeagueIds) {
+          try {
+            const lResp = await fetch(`${API_FOOTBALL_BASE}/fixtures?live=all&league=${leagueId}`, {
+              headers: { 'x-apisports-key': apiKey, 'Content-Type': 'application/json' },
+            });
+            if (lResp.ok) {
+              const lData = await lResp.json();
+              if (lData.response && Array.isArray(lData.response)) {
+                liveResults.push(...lData.response);
+              }
+            }
+          } catch (e) {
+            console.warn(`Failed to fetch live for league ${leagueId}:`, e);
+          }
+        }
+
+        console.log(`Total WC-related live fixtures: ${liveResults.length}`);
+        return new Response(
+          JSON.stringify({ response: liveResults, results: liveResults.length }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
 
       case 'standings':
         endpoint = '/standings';
