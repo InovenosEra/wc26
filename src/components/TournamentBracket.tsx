@@ -666,6 +666,7 @@ export function QualificationBracket() {
       const liveId = String(liveMatch.id);
       return {
         ...staticMatch,
+        id: liveId,
         homeTeam: liveMatch.homeTeam,
         awayTeam: liveMatch.awayTeam,
         homeFlag: liveMatch.homeFlag || staticMatch.homeFlag,
