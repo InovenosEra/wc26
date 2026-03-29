@@ -11,6 +11,17 @@ const API_FOOTBALL_BASE = 'https://v3.football.api-sports.io';
 const WORLD_CUP_LEAGUE_ID = 1;
 const WORLD_CUP_SEASON = 2026;
 
+// Known qualifier / playoff league IDs in API-Football
+const QUALIFIER_LEAGUES = [
+  { id: 32, season: 2026, name: 'WC Qualification Europe' },
+  { id: 34, season: 2026, name: 'WC Qualification South America' },
+  { id: 30, season: 2026, name: 'WC Qualification Africa' },
+  { id: 31, season: 2026, name: 'WC Qualification Asia' },
+  { id: 33, season: 2026, name: 'WC Qualification North America' },
+  { id: 35, season: 2026, name: 'WC Qualification Oceania' },
+  { id: 882, season: 2026, name: 'WC Qualification Intercontinental' },
+];
+
 async function callApiFootball(endpoint: string, params: Record<string, string>, apiKey: string): Promise<Response> {
   const searchParams = new URLSearchParams(params);
   const url = `${API_FOOTBALL_BASE}${endpoint}?${searchParams.toString()}`;
