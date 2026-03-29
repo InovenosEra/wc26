@@ -664,13 +664,72 @@ export function QualificationBracket() {
     return staticMatch;
   };
 
-  // Apply live data to playoff paths
-  const getLivePlayoffPath = (path: PlayoffPath): PlayoffPath => ({
-    ...path,
-    semifinal1: mergeWithLiveData(path.semifinal1),
-    semifinal2: path.semifinal2 ? mergeWithLiveData(path.semifinal2) : undefined,
-    final: mergeWithLiveData(path.final),
-  });
+  // Apply live data to playoff paths, resolving winners for finals
+  const getLivePlayoffPath = (path: PlayoffPath): PlayoffPath => {
+    const sf1 = mergeWithLiveData(path.semifinal1);
+    const sf2 = path.semifinal2 ? mergeWithLiveData(path.semifinal2) : undefined;
+    let final = mergeWithLiveData(path.final);
+
+    // If semifinals are completed, resolve "Winner SF" placeholders for finals
+    const getWinner = (match: BracketMatch): { name: string; flag?: string } | null => {
+      if (match.status !== 'completed' || match.homeScore === null || match.awayScore === null) return null;
+      if (match.homeScore > match.awayScore) return { name: match.homeTeam, flag: match.homeFlag };
+      if (match.awayScore > match.homeScore) return { name: match.awayTeam, flag: match.awayFlag };
+      // Penalty shootout - check if the status was PEN (penalties); 
+      // API returns the winner even in draws via the team name order convention
+      // For now, if it's a draw, we can't determine the winner without extra data
+      return null;
+    };
+
+    const winner1 = getWinner(sf1);
+    const winner2 = sf2 ? getWinner(sf2) : null;
+
+    // Check if the final hasn't been matched to live data yet (still has placeholder names)
+    if (final.homeTeam.includes('Winner') || final.awayTeam.includes('Winner')) {
+      // Try to find the final match from live data by looking for matches with winner teams
+      if (winner1 || winner2) {
+        const possibleFinal = liveFixtures.find(f => {
+          if (f.round !== 'Final') return false;
+          const fHome = normalizeTeamName(f.homeTeam);
+          const fAway = normalizeTeamName(f.awayTeam);
+          const w1Norm = winner1 ? normalizeTeamName(winner1.name) : '';
+          const w2Norm = winner2 ? normalizeTeamName(winner2.name) : '';
+          return (
+            (w1Norm && (fHome === w1Norm || fAway === w1Norm)) ||
+            (w2Norm && (fHome === w2Norm || fAway === w2Norm))
+          );
+        });
+
+        if (possibleFinal) {
+          final = {
+            ...final,
+            homeTeam: possibleFinal.homeTeam,
+            awayTeam: possibleFinal.awayTeam,
+            homeFlag: possibleFinal.homeFlag || final.homeFlag,
+            awayFlag: possibleFinal.awayFlag || final.awayFlag,
+            homeScore: possibleFinal.homeScore,
+            awayScore: possibleFinal.awayScore,
+            status: possibleFinal.status,
+            venue: possibleFinal.venue || final.venue,
+          };
+        } else {
+          // Manually resolve from winners
+          if (winner1 && final.homeTeam.includes('Winner')) {
+            final = { ...final, homeTeam: winner1.name, homeFlag: winner1.flag };
+          }
+          if (winner2 && final.awayTeam.includes('Winner')) {
+            final = { ...final, awayTeam: winner2.name, awayFlag: winner2.flag };
+          }
+          // For single semifinal paths (intercontinental)
+          if (!sf2 && winner1 && final.awayTeam.includes('Winner')) {
+            final = { ...final, awayTeam: winner1.name, awayFlag: winner1.flag };
+          }
+        }
+      }
+    }
+
+    return { ...path, semifinal1: sf1, semifinal2: sf2, final };
+  };
 
   return (
     <div className="space-y-4">
