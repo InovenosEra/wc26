@@ -11,6 +11,17 @@ const API_FOOTBALL_BASE = 'https://v3.football.api-sports.io';
 const WORLD_CUP_LEAGUE_ID = 1;
 const WORLD_CUP_SEASON = 2026;
 
+// Known qualifier / playoff league IDs in API-Football
+const QUALIFIER_LEAGUES = [
+  { id: 32, season: 2026, name: 'WC Qualification Europe' },
+  { id: 34, season: 2026, name: 'WC Qualification South America' },
+  { id: 30, season: 2026, name: 'WC Qualification Africa' },
+  { id: 31, season: 2026, name: 'WC Qualification Asia' },
+  { id: 33, season: 2026, name: 'WC Qualification North America' },
+  { id: 35, season: 2026, name: 'WC Qualification Oceania' },
+  { id: 882, season: 2026, name: 'WC Qualification Intercontinental' },
+];
+
 async function callApiFootball(endpoint: string, params: Record<string, string>, apiKey: string): Promise<Response> {
   const searchParams = new URLSearchParams(params);
   const url = `${API_FOOTBALL_BASE}${endpoint}?${searchParams.toString()}`;
@@ -58,11 +69,36 @@ serve(async (req) => {
         break;
 
       case 'qualifiers': {
-        const startDate = '2026-03-20';
-        const endDate = '2026-04-05';
-        endpoint = '/fixtures';
-        params = { from: startDate, to: endDate };
-        break;
+        // Fetch from all qualifier leagues in parallel and merge results
+        const allQualFixtures: any[] = [];
+        
+        for (const league of QUALIFIER_LEAGUES) {
+          try {
+            const qParams = new URLSearchParams({
+              league: String(league.id),
+              season: String(league.season),
+            });
+            const qUrl = `${API_FOOTBALL_BASE}/fixtures?${qParams.toString()}`;
+            const qResp = await fetch(qUrl, {
+              headers: { 'x-apisports-key': apiKey, 'Content-Type': 'application/json' },
+            });
+            if (qResp.ok) {
+              const qData = await qResp.json();
+              if (qData.response && Array.isArray(qData.response)) {
+                allQualFixtures.push(...qData.response);
+              }
+            }
+            console.log(`Qualifier league ${league.id} (${league.name}): ${qResp.ok ? 'ok' : qResp.status}`);
+          } catch (e) {
+            console.warn(`Failed to fetch qualifier league ${league.id}:`, e);
+          }
+        }
+
+        console.log(`Total qualifier fixtures fetched: ${allQualFixtures.length}`);
+        return new Response(
+          JSON.stringify({ response: allQualFixtures, results: allQualFixtures.length }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
 
       case 'live':
