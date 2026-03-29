@@ -663,6 +663,7 @@ export function QualificationBracket() {
     });
 
     if (liveMatch) {
+      const liveId = String(liveMatch.id);
       return {
         ...staticMatch,
         homeTeam: liveMatch.homeTeam,
