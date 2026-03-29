@@ -168,6 +168,14 @@ serve(async (req) => {
       const errorText = await response.text();
       console.error(`API-Football error: ${response.status} ${response.statusText}`, errorText);
 
+      if (action === 'qualifiers') {
+        console.warn('Falling back to empty qualifiers payload because API-Football rejected the request');
+        return new Response(
+          JSON.stringify({ response: [], results: 0, message: 'Qualifier live data unavailable for the current API-Football query' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       return new Response(
         JSON.stringify({ error: `API error: ${response.status}`, details: errorText }),
         { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -180,6 +188,15 @@ serve(async (req) => {
     // Check for API-level errors
     if (data.errors && Object.keys(data.errors).length > 0) {
       console.error('API-Football returned errors:', JSON.stringify(data.errors));
+
+      if (action === 'qualifiers') {
+        console.warn('Falling back to empty qualifiers payload because API-Football returned validation errors');
+        return new Response(
+          JSON.stringify({ response: [], results: 0, message: 'Qualifier live data unavailable for the current API-Football query' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       return new Response(
         JSON.stringify({ error: 'API returned errors', details: data.errors }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
