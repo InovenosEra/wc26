@@ -612,15 +612,41 @@ export function QualificationBracket() {
     return () => clearInterval(interval);
   }, []);
 
+  // Normalize team names for matching (API vs static data differences)
+  const normalizeTeamName = (name: string): string => {
+    const aliases: Record<string, string> = {
+      'bosnia-herzegovina': 'bosnia',
+      'bosnia & herzegovina': 'bosnia',
+      'turkey': 'turkiye',
+      'türkiye': 'turkiye',
+      'czechia': 'czech republic',
+      'czech republic': 'czech republic',
+      'ireland': 'ireland',
+      'rep. of ireland': 'ireland',
+      'north macedonia': 'fyr macedonia',
+      'fyr macedonia': 'fyr macedonia',
+      'dr congo': 'congo dr',
+      'congo dr': 'congo dr',
+      'northern ireland': 'northern ireland',
+    };
+    const lower = name.toLowerCase().trim();
+    return aliases[lower] || lower;
+  };
+
   // Merge live data with static fallback data
   const mergeWithLiveData = (staticMatch: BracketMatch): BracketMatch => {
+    const normHome = normalizeTeamName(staticMatch.homeTeam);
+    const normAway = normalizeTeamName(staticMatch.awayTeam);
+
     // Try to find a matching fixture from live data
-    const liveMatch = liveFixtures.find(f => 
-      (f.homeTeam.toLowerCase().includes(staticMatch.homeTeam.toLowerCase()) ||
-       staticMatch.homeTeam.toLowerCase().includes(f.homeTeam.toLowerCase())) &&
-      (f.awayTeam.toLowerCase().includes(staticMatch.awayTeam.toLowerCase()) ||
-       staticMatch.awayTeam.toLowerCase().includes(f.awayTeam.toLowerCase()))
-    );
+    const liveMatch = liveFixtures.find(f => {
+      const liveHome = normalizeTeamName(f.homeTeam);
+      const liveAway = normalizeTeamName(f.awayTeam);
+      return (
+        (liveHome === normHome || liveHome.includes(normHome) || normHome.includes(liveHome)) &&
+        (liveAway === normAway || liveAway.includes(normAway) || normAway.includes(liveAway))
+      );
+    });
 
     if (liveMatch) {
       return {
