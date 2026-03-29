@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Trophy, Flag, Calendar, MapPin, Loader2, RefreshCw, Wifi, WifiOff } from 'lucide-react';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
@@ -292,19 +293,32 @@ function TreeMatchCard({ match, size = 'normal' }: { match: BracketMatch; size?:
 
 // Match card for qualifiers (larger, more detailed)
 function QualifierMatchCard({ match, showOdds = false }: { match: BracketMatch; showOdds?: boolean }) {
+  const navigate = useNavigate();
   const isTbd = match.status === 'tbd';
   const canShowOdds = showOdds && !isTbd && 
     !match.homeTeam.includes('Winner') && 
     !match.homeTeam.includes('TBD') &&
     !match.awayTeam.includes('Winner') &&
     !match.awayTeam.includes('TBD');
+
+  const isClickable = !isTbd && match.id && !match.id.startsWith('UEFA-') && !match.id.startsWith('IC-');
+
+  const handleClick = () => {
+    if (isClickable) {
+      navigate(`/qualifier/${match.id}`);
+    }
+  };
   
   return (
-    <div className={cn(
-      "glass-card rounded-lg border border-border/50 overflow-hidden",
-      match.status === 'live' && "border-accent ring-1 ring-accent/50",
-      match.status === 'scheduled' && "border-primary/30"
-    )}>
+    <div
+      onClick={handleClick}
+      className={cn(
+        "glass-card rounded-lg border border-border/50 overflow-hidden",
+        match.status === 'live' && "border-accent ring-1 ring-accent/50",
+        match.status === 'scheduled' && "border-primary/30",
+        isClickable && "cursor-pointer hover:bg-card/90 transition-colors"
+      )}
+    >
       {(match.date || match.venue) && (
         <div className="px-2 py-1 bg-secondary/30 border-b border-border/30 flex items-center justify-between">
           {match.date && (
