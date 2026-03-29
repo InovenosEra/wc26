@@ -160,10 +160,12 @@ serve(async (req) => {
         break;
       }
 
-      case 'leagues':
+      case 'leagues': {
         endpoint = '/leagues';
-        params = { search: 'World Cup' };
+        const leagueSearch = url.searchParams.get('search') || 'World Cup';
+        params = { search: leagueSearch };
         break;
+      }
 
       case 'player': {
         const playerId = url.searchParams.get('playerId');
