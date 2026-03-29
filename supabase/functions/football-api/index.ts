@@ -58,12 +58,10 @@ serve(async (req) => {
         break;
 
       case 'qualifiers': {
-        // World Cup qualifiers – use today's surrounding date window
         const startDate = '2026-03-20';
         const endDate = '2026-04-05';
         endpoint = '/fixtures';
-        params = { date: startDate, to: endDate };
-        // Will filter international fixtures on the client
+        params = { from: startDate, to: endDate };
         break;
       }
 
