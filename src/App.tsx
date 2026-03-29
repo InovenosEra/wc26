@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import MatchDetail from "./pages/MatchDetail";
+import QualifierMatchDetail from "./pages/QualifierMatchDetail";
 import TeamDetail from "./pages/TeamDetail";
 import NotFound from "./pages/NotFound";
 
@@ -21,6 +22,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/match/:matchId" element={<MatchDetail />} />
+            <Route path="/qualifier/:fixtureId" element={<QualifierMatchDetail />} />
             <Route path="/team/:teamId" element={<TeamDetail />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
