@@ -12,14 +12,15 @@ const WORLD_CUP_LEAGUE_ID = 1;
 const WORLD_CUP_SEASON = 2026;
 
 // Known qualifier / playoff league IDs in API-Football
+// NOTE: Each confederation uses a different "season" value in the API
 const QUALIFIER_LEAGUES = [
-  { id: 32, season: 2026, name: 'WC Qualification Europe' },
+  { id: 32, season: 2024, name: 'WC Qualification Europe' },
   { id: 34, season: 2026, name: 'WC Qualification South America' },
-  { id: 30, season: 2026, name: 'WC Qualification Africa' },
-  { id: 31, season: 2026, name: 'WC Qualification Asia' },
-  { id: 33, season: 2026, name: 'WC Qualification North America' },
-  { id: 35, season: 2026, name: 'WC Qualification Oceania' },
-  { id: 882, season: 2026, name: 'WC Qualification Intercontinental' },
+  { id: 29, season: 2023, name: 'WC Qualification Africa' },
+  { id: 30, season: 2026, name: 'WC Qualification Asia' },
+  { id: 31, season: 2026, name: 'WC Qualification CONCACAF' },
+  { id: 33, season: 2026, name: 'WC Qualification Oceania' },
+  { id: 37, season: 2026, name: 'WC Qualification Intercontinental Play-offs' },
 ];
 
 async function callApiFootball(endpoint: string, params: Record<string, string>, apiKey: string): Promise<Response> {
