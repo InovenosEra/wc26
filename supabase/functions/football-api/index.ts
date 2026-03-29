@@ -58,10 +58,13 @@ serve(async (req) => {
         break;
 
       case 'qualifiers': {
-        const startDate = '2026-03-20';
-        const endDate = '2026-04-05';
+        // World Cup Qualification leagues + Intercontinental playoffs
+        // UEFA WC Qualifiers (league 32), plus playoff league 882
+        // We fetch by league + season to get proper qualifier fixtures
+        const qualLeague = url.searchParams.get('league') || '32';
+        const qualSeason = url.searchParams.get('season') || '2026';
         endpoint = '/fixtures';
-        params = { from: startDate, to: endDate };
+        params = { league: qualLeague, season: qualSeason };
         break;
       }
 
